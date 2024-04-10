@@ -117,7 +117,7 @@ class LeagueSelectionWidget extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => LiveScoresWidget(league: 'PPL'),
+                    builder: (context) => LiveScoresWidget(league: 'CL'),
                   ),
                 );
               },
@@ -125,7 +125,7 @@ class LeagueSelectionWidget extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
                   child: Image.asset(
-                    'assets/nos.png',
+                    'assets/champions.png',
                     fit: BoxFit.cover,
                   ),
                 ),
