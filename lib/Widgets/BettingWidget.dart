@@ -8,7 +8,7 @@ class BettingWidget extends StatelessWidget {
         title: Text('Apuestas Virtuales'),
       ),
       body: Center(
-        child: Text('Pantalla de Betting'),
+        child: Text('Pantalla de Bombardeen segovia'),
       ),
     );
   }
