@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "968576878838",
+    "project_id": "betamigo-d49f9",
+    "storage_bucket": "betamigo-d49f9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:968576878838:android:07359a0cc4abc7688584d7",
+        "android_client_info": {
+          "package_name": "com.example.betamigo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0vMTptJ_TUAdzI5du-fHsv_DV_oFQdQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

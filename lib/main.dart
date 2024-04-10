@@ -1,9 +1,13 @@
-import 'package:betamigo/Screens/MainScreen.dart';
-import 'package:betamigo/Widgets/LeagueSelectionWidget.dart';
-import 'package:betamigo/Widgets/LiveScoresWidget.dart';
+import 'package:betamigo/Screens/Authentication/authentication_wrapper.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Importa las opciones de Firebase
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MyApp());
 }
 
@@ -15,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MainScreen(), // Establece el widget de pantalla de live scores como la pantalla principal
+      home: AuthenticationWrapper(), // Establece el widget de pantalla principal
     );
   }
 }
