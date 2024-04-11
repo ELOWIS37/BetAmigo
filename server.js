@@ -1,14 +1,27 @@
 import express from 'express';
 import fetch from 'node-fetch';
+import cors from 'cors';
 
+const cors = require('cors')({ origin: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.use(cors()); 
 
 // Middleware para permitir solicitudes CORS
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); // Métodos permitidos
   next();
+});
+
+
+// Ruta para servir las imágenes
+app.get('/images/:imageName', (req, res) => {
+  const imageName = req.params.imageName;
+  // Lógica para servir la imagen desde el servidor
+  // Enviar la imagen como respuesta
+  res.sendFile(__dirname + '/public/images/' + imageName);
 });
 
 // Ruta para obtener los live scores desde la API de football-data.org para la próxima semana
