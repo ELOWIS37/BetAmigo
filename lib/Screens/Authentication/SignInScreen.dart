@@ -15,6 +15,7 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController userController = TextEditingController();
+  bool _obscurePassword = true; // Variable para controlar la visibilidad de la contraseña
 
   @override
   void initState() {
@@ -54,7 +55,7 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
               opacity: _animation,
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.8,
-                height: MediaQuery.of(context).size.height * 0.6,
+                height: MediaQuery.of(context).size.height * 0.65,
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.97),
@@ -92,8 +93,13 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
             ),
           ),
           // Logo encima de todo
-          Positioned(
-            top: 0,
+          // Reemplaza el Positioned existente con AnimatedPositioned
+          // AnimatedPositioned para el logo
+          AnimatedPositioned(
+            duration: MediaQuery.of(context).viewInsets.bottom > 0
+                ? Duration(milliseconds: 100) // Si el teclado está activo, duración corta
+                : Duration(milliseconds: 300), // Si el teclado no está activo, duración larga
+            top: MediaQuery.of(context).viewInsets.bottom > 0 ? -200 : 0, // Mueve la imagen hacia arriba cuando el teclado está activo
             left: 0,
             right: 0,
             child: FadeTransition(
@@ -102,8 +108,8 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Image.asset(
                   'assets/logobetamigo.png',
-                  height: 250, // Altura del logo
-                  width: 250, // Ancho del logo
+                  width: MediaQuery.of(context).size.width * 0.25,
+                  height: MediaQuery.of(context).size.height * 0.25,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -124,7 +130,7 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
         children: [
           _buildTextField(emailController, 'Correo'),
           SizedBox(height: 16),
-          _buildTextField(passwordController, 'Contraseña'),
+          _buildPasswordField(passwordController, 'Contraseña'),
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: () async {
@@ -172,7 +178,7 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
           SizedBox(height: 16),
           _buildTextField(emailController, 'Correo'),
           SizedBox(height: 16),
-          _buildTextField(passwordController, 'Contraseña'),
+          _buildPasswordField(passwordController, 'Contraseña'),
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
@@ -199,6 +205,30 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
         labelText: labelText,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  // Función para construir un campo de contraseña con opción de ocultar/mostrar
+  Widget _buildPasswordField(TextEditingController controller, String labelText) {
+    return TextField(
+      controller: controller,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        labelText: labelText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        suffixIcon: IconButton(
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
+          icon: Icon(
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+          ),
         ),
       ),
     );
