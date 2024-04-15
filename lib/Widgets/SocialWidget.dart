@@ -10,7 +10,7 @@ class SocialWidget extends StatefulWidget {
 class _SocialWidgetState extends State<SocialWidget> {
   List<String> amigos = [];
   List<Map<String, dynamic>> grupos = [];
-  late String? usuarioActualId; // Variable para almacenar el ID del usuario actual
+  late String? usuarioActualId;
 
   TextEditingController _amigoController = TextEditingController();
   TextEditingController _grupoController = TextEditingController();
@@ -78,7 +78,6 @@ class _SocialWidgetState extends State<SocialWidget> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              // Color del texto del botón
               textStyle: TextStyle(color: Colors.black),
             ),
             child: Text('Añadir Amigo'),
@@ -138,7 +137,6 @@ class _SocialWidgetState extends State<SocialWidget> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              // Color del texto del botón
               textStyle: TextStyle(color: Colors.white),
             ),
             child: Text('Agregar Amigos al Grupo'),
@@ -188,7 +186,6 @@ class _SocialWidgetState extends State<SocialWidget> {
 
   void _agregarAmigo(String amigo) {
     if (amigos.contains(amigo)) {
-      // El amigo ya está en la lista
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -212,23 +209,19 @@ class _SocialWidgetState extends State<SocialWidget> {
         .get()
         .then((QuerySnapshot querySnapshot) {
           if (querySnapshot.docs.isNotEmpty) {
-            // El amigo existe en Firestore
             setState(() {
               amigos.add(amigo);
             });
-            // Mostrar mensaje informativo
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Se ha añadido a $amigo como amigo.'),
                 duration: Duration(seconds: 2),
               ),
             );
-            // Agregar amigo al usuario actual en Firestore
             FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
               'amigos': FieldValue.arrayUnion([amigo])
             });
           } else {
-            // El amigo no existe en Firestore
             showDialog(
               context: context,
               builder: (BuildContext context) {
@@ -311,6 +304,11 @@ class _SocialWidgetState extends State<SocialWidget> {
         });
         _grupoController.clear();
       });
+      // Guardar el grupo en Firestore
+      FirebaseFirestore.instance.collection('grupos').add({
+        'nombre': nombreGrupo,
+        'miembros': amigosSeleccionados,
+      });
     } else {
       showDialog(
         context: context,
@@ -379,11 +377,9 @@ class _SocialWidgetState extends State<SocialWidget> {
             },
           );
         } else {
-          // El usuario no tiene una URL de imagen de perfil
           _mostrarDialogoError('El usuario no tiene una imagen de perfil.');
         }
       } else {
-        // El amigo no existe en Firestore
         _mostrarDialogoError('El usuario no existe.');
       }
     });
@@ -413,7 +409,6 @@ class _SocialWidgetState extends State<SocialWidget> {
     setState(() {
       amigos.remove(amigo);
     });
-    // Eliminar amigo del usuario actual en Firestore
     FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
       'amigos': FieldValue.arrayRemove([amigo])
     });
@@ -423,16 +418,15 @@ class _SocialWidgetState extends State<SocialWidget> {
   void initState() {
     super.initState();
     _obtenerUsuarioActual();
-    _cargarAmigosUsuario(); // Cargar amigos del usuario al iniciar la aplicación
+    _cargarAmigosUsuario();
+    _cargarGrupos(); // Cargar grupos del usuario al iniciar la aplicación
   }
 
   void _obtenerUsuarioActual() {
-    // Obtener el ID del usuario actual desde Firebase Authentication
     usuarioActualId = FirebaseAuth.instance.currentUser?.uid;
   }
 
   void _cargarAmigosUsuario() {
-    // Cargar la lista de amigos del usuario desde Firestore
     FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get().then((DocumentSnapshot documentSnapshot) {
       if (documentSnapshot.exists) {
         setState(() {
@@ -441,14 +435,41 @@ class _SocialWidgetState extends State<SocialWidget> {
       }
     });
   }
+
+  void _cargarGrupos() {
+  FirebaseFirestore.instance.collection('grupos').get().then((QuerySnapshot querySnapshot) {
+    if (querySnapshot.docs.isNotEmpty) {
+      setState(() {
+        grupos = querySnapshot.docs.map((doc) {
+          // Convertir los miembros a una lista de cadenas
+          Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+          if (data != null) {
+            List<dynamic> miembrosDynamic = data['miembros'];
+            List<String> miembros = miembrosDynamic.map((miembro) => miembro.toString()).toList();
+            
+            // Crear un mapa con los datos del grupo
+            return {
+              'nombre': data['nombre'],
+              'miembros': miembros,
+            };
+          }
+          return null;
+        }).where((item) => item != null).toList().cast<Map<String, dynamic>>();
+      });
+    }
+  });
 }
 
-void main() {
-  runApp(MaterialApp(
-    title: 'Social App',
-    theme: ThemeData(
-      primarySwatch: Colors.blue,
-    ),
-    home: SocialWidget(),
-  ));
+
+
+
+  void main() {
+    runApp(MaterialApp(
+      title: 'Social App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: SocialWidget(),
+    ));
+  }
 }
