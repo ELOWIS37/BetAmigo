@@ -3,105 +3,202 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:betamigo/Screens/MainScreen.dart'; // Importa la pantalla MainScreen
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
+  @override
+  _SignInScreenState createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController userController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2, // Número de pestañas
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('BetAmigo'),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: 'Iniciar Sesión'), // Pestaña para iniciar sesión
-              Tab(text: 'Registrarse'), // Pestaña para registrarse
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            // Contenido de la pestaña de iniciar sesión
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(labelText: 'Correo'),
-                  ),
-                  TextField(
-                    controller: passwordController,
-                    decoration: InputDecoration(labelText: 'Contraseña'),
-                    obscureText: true,
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        await FirebaseAuth.instance.signInWithEmailAndPassword(
-                          email: emailController.text,
-                          password: passwordController.text,
-                        );
-                        // Muestra un mensaje de éxito al iniciar sesión
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Iniciado sesión correctamente!'),
-                        ));
-                        // Redirige a la pantalla MainScreen después de iniciar sesión correctamente
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => MainScreen()),
-                        );
-                      } catch (e) {
-                        print('Error al iniciar sessión: $e');
-                        // Muestra un mensaje de error
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Error al iniciar sessión: $e'),
-                        ));
-                      }
-                    },
-                    child: Text('Iniciar Sesión'),
-                  ),
-                ],
-              ),
-            ),
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1000),
+    );
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_controller);
+    _controller.forward();
+  }
 
-            // Contenido de la pestaña de registrarse
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TextField(
-                    controller: userController,
-                    decoration: InputDecoration(labelText: 'Usuario'),
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Fondo con imagen
+          Positioned.fill(
+            child: Image.asset(
+              'assets/soccer_background.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+          // Contenido
+          Center(
+            child: FadeTransition(
+              opacity: _animation,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: MediaQuery.of(context).size.height * 0.6,
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.97),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: DefaultTabController(
+                  length: 2,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 16),
+                      SizedBox(height: 16),
+                      // Tabs
+                      TabBar(
+                        tabs: [
+                          Tab(text: 'Iniciar Sesión'),
+                          Tab(text: 'Registrarse'),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            // Contenido de la pestaña de iniciar sesión
+                            _buildSignInTab(),
+                            // Contenido de la pestaña de registrarse
+                            _buildRegisterTab(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(labelText: 'Correo'),
-                  ),
-                  TextField(
-                    controller: passwordController,
-                    decoration: InputDecoration(labelText: 'Contraseña'),
-                    obscureText: true,
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      _register(context); // Llama a la función de registro
-                    },
-                    child: Text('Registrarse'),
-                  ),
-                ],
+                ),
               ),
             ),
-          ],
+          ),
+          // Logo encima de todo
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: FadeTransition(
+              opacity: _animation,
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Image.asset(
+                  'assets/logobetamigo.png',
+                  height: 250, // Altura del logo
+                  width: 250, // Ancho del logo
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Contenido de la pestaña de iniciar sesión
+  Widget _buildSignInTab() {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTextField(emailController, 'Correo'),
+          SizedBox(height: 16),
+          _buildTextField(passwordController, 'Contraseña'),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await FirebaseAuth.instance.signInWithEmailAndPassword(
+                  email: emailController.text,
+                  password: passwordController.text,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Iniciado sesión correctamente!'),
+                ));
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => MainScreen()),
+                );
+              } catch (e) {
+                print('Error al iniciar sesión: $e');
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Error al iniciar sesión: $e'),
+                ));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 148, 196, 236),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text('Iniciar Sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Contenido de la pestaña de registrarse
+  Widget _buildRegisterTab() {
+    return Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTextField(userController, 'Usuario'),
+          SizedBox(height: 16),
+          _buildTextField(emailController, 'Correo'),
+          SizedBox(height: 16),
+          _buildTextField(passwordController, 'Contraseña'),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              _register(context); // Llama a la función de registro
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 148, 196, 236),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text('Registrarse'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Función para construir un campo de texto con borde
+  Widget _buildTextField(TextEditingController controller, String labelText) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: labelText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );
@@ -116,33 +213,28 @@ class SignInScreen extends StatelessWidget {
         password: passwordController.text,
       );
 
-      // Guarda el ID del usuario en Firestore
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'user': userController.text,
         'email': emailController.text,
-        'id': userCredential.user!.uid
-        // Puedes agregar más información del usuario aquí si lo deseas
+        'id': userCredential.user!.uid,
+        'profileImageid': '',
       });
 
-      // Muestra un mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Usuario registrado correctamente!'),
       ));
 
-      // Después de registrar, inicia sesión automáticamente
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text,
         password: passwordController.text,
       );
 
-      // Redirige a la pantalla MainScreen después de iniciar sesión correctamente
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => MainScreen()),
       );
     } catch (e) {
       print('Error al registrar el usuario: $e');
-      // Muestra un mensaje de error
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Error al registrar el usuario: $e'),
       ));
