@@ -247,6 +247,7 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
         'user': userController.text,
         'email': emailController.text,
         'id': userCredential.user!.uid,
+        'profileImageid': '',
       });
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
