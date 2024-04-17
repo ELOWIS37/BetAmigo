@@ -16,6 +16,8 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
   late Timer _timer;
   late Duration _timeRemaining = Duration();
 
+  List<int> dailyRewards = [10, 10, 10, 10, 20, 40, 100];
+
   @override
   void initState() {
     super.initState();
@@ -139,7 +141,7 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
               crossAxisCount: 3,
               shrinkWrap: true,
               children: List.generate(7, (index) {
-                int reward = index == 6 ? 20 : 10; // Recompensa de 20 para el séptimo día, 10 para los demás
+                int reward = dailyRewards[index]; // Obtener la recompensa del día correspondiente
                 bool isCurrentDay = _dayCount == index;
                 bool isPastDay = _dayCount > index;
                 bool isFutureDay = _dayCount < index;
