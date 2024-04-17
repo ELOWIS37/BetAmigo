@@ -414,11 +414,11 @@ class _SocialWidgetState extends State<SocialWidget> {
     });
   }
 
- @override
-  void initState() {
-    super.initState();
-    _obtenerUsuarioActual();
-    _cargarAmigosUsuario();
+  @override
+  void initState() { 
+    super.initState(); 
+    _obtenerUsuarioActual(); 
+    _cargarAmigosUsuario(); 
     _cargarGrupos(); // Cargar grupos del usuario al iniciar la aplicación
   }
 
@@ -436,28 +436,46 @@ class _SocialWidgetState extends State<SocialWidget> {
     });
   }
 
-  void _cargarGrupos() {
-  FirebaseFirestore.instance.collection('grupos').get().then((QuerySnapshot querySnapshot) {
-    if (querySnapshot.docs.isNotEmpty) {
-      setState(() {
-        grupos = querySnapshot.docs.map((doc) {
-          // Convertir los miembros a una lista de cadenas
-          Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
-          if (data != null) {
-            List<dynamic> miembrosDynamic = data['miembros'];
-            List<String> miembros = miembrosDynamic.map((miembro) => miembro.toString()).toList();
-            
-            // Crear un mapa con los datos del grupo
-            return {
-              'nombre': data['nombre'],
-              'miembros': miembros,
-            };
-          }
-          return null;
-        }).where((item) => item != null).toList().cast<Map<String, dynamic>>();
+  void _cargarGrupos() async {
+  // Obtener el nombre de usuario actual
+  String? nombreUsuario;
+  var user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>? ?? {};
+        nombreUsuario = data['user'];
+      } else {
+        print('No se pudo encontrar el documento del usuario.');
+      }
+    });
+  } else {
+    print('No hay ningún usuario conectado.');
+  }
+
+  // Verificar si se obtuvo el nombre de usuario
+  if (nombreUsuario != null) {
+    FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: nombreUsuario).get().then((QuerySnapshot querySnapshot) {
+      List<Map<String, dynamic>> loadedGrupos = [];
+      querySnapshot.docs.forEach((doc) {
+        print('Nombre del grupo: ' + doc["nombre"]);
+        print('Miembros del grupo: ' + doc["miembros"].join(', '));
+
+        // Agregar el grupo a la lista de grupos cargados
+        loadedGrupos.add({
+          'nombre': doc["nombre"],
+          'miembros': List<String>.from(doc["miembros"]),
+        });
       });
-    }
-  });
+
+      // Actualizar el estado del widget con los grupos cargados
+      setState(() {
+        grupos = loadedGrupos;
+      });
+    });
+  } else {
+    print('No se pudo obtener el nombre de usuario.');
+  }
 }
 
 
