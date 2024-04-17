@@ -49,6 +49,7 @@ class _SocialWidgetState extends State<SocialWidget> {
   //     solicitudes.removeWhere((solicitud) => solicitud == from);
   //   });
   // }
+  
 void _aceptarSolicitud(String from) {
   String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -58,7 +59,7 @@ void _aceptarSolicitud(String from) {
   });
 
   // Agregar al usuario actual a la lista de amigos del usuario que envió la solicitud
-  FirebaseFirestore.instance.collection('users').where('email', isEqualTo: from).get().then((QuerySnapshot querySnapshot) {
+  FirebaseFirestore.instance.collection('users').where('user', isEqualTo: from).get().then((QuerySnapshot querySnapshot) {
     if (querySnapshot.docs.isNotEmpty) {
       String usuarioSolicitudId = querySnapshot.docs.first.id;
       
@@ -83,6 +84,7 @@ void _aceptarSolicitud(String from) {
     solicitudes.removeWhere((solicitud) => solicitud == from);
   });
 }
+
 
 
 // Widget _buildSolicitudesTab() {
@@ -433,10 +435,6 @@ Widget build(BuildContext context) {
     print('No hay ningún usuario conectado.');
   }
 }
-
-
-
-
 
 
   void _mostrarSeleccionAmigos() {
