@@ -20,6 +20,7 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late String _profileImageId = '';
   late int _betCoins = 0; // Agrega una variable para almacenar los BetCoins
+  late ValueNotifier<int> _betCoinsNotifier; // Nuevo ValueNotifier
 
   final List<String> _imageIds = [
     'usuario1',
@@ -67,27 +68,19 @@ class _MainScreenState extends State<MainScreen> {
     SocialWidget(),
     BettingWidget(),
   ];
-
+  
+  
   final ValueNotifier<String> _profileImageIdNotifier = ValueNotifier<String>('');
 
   @override
   void initState() {
     super.initState();
+    _betCoinsNotifier = ValueNotifier<int>(_betCoins); // Inicializa el ValueNotifier con el valor actual de _betCoins
     _loadProfileImageId();
     _loadBetCoins(); // Carga los BetCoins al inicializar la pantalla
+   
   }
 
-  // Future<void> _loadProfileImageId() async {
-  //   User? user = FirebaseAuth.instance.currentUser;
-  //   if (user != null) {
-  //     DocumentSnapshot<Map<String, dynamic>> userData =
-  //         await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-  //     String profileImageId = userData.get('profileImageid');
-  //     setState(() {
-  //       _profileImageId = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
-  //     });
-  //   }
-  // }
   Future<void> _loadProfileImageId() async {
   User? user = FirebaseAuth.instance.currentUser;
   if (user != null) {
@@ -98,20 +91,31 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-
-
-
-  Future<void> _loadBetCoins() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      DocumentSnapshot<Map<String, dynamic>> userData =
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      int betCoins = userData.get('betCoins');
-      setState(() {
-        _betCoins = betCoins;
-      });
-    }
+Future<void> _loadBetCoins() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    DocumentSnapshot<Map<String, dynamic>> userData =
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    int betCoins = userData.get('betCoins');
+    setState(() {
+      _betCoins = betCoins;
+      _betCoinsNotifier.value = betCoins; // Actualiza el ValueNotifier
+    });
   }
+}
+
+Stream<int> _betCoinsStream() {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    return FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().map((snapshot) {
+      return snapshot.data()?['betCoins'] ?? 0;
+    });
+  }
+  return Stream.value(0);
+}
+
+
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -122,6 +126,8 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     bool isSmallScreen = MediaQuery.of(context).size.width < 600;
+    // ------------------- 
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -169,37 +175,80 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
-        actions: [
-          Row(
-            children: [
-              Text('BetCoins: $_betCoins'), // Muestra el número de BetCoins
-              PopupMenuButton(
-                itemBuilder: (BuildContext context) {
-                  return [
-                    PopupMenuItem(
-                      child: ListTile(
-                        title: Text('Perfil'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showProfileDialog(context);
-                        },
-                      ),
-                    ),
-                    PopupMenuItem(
-                      child: ListTile(
-                        title: Text('Cerrar Sesión'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _signOut(context);
-                        },
-                      ),
-                    ),
-                  ];
+        // actions: [
+        //   Row(
+        //     children: [
+        //       Text('BetCoins: $_betCoins'), // Muestra el número de BetCoins
+        //       PopupMenuButton(
+        //         itemBuilder: (BuildContext context) {
+        //           return [
+        //             PopupMenuItem(
+        //               child: ListTile(
+        //                 title: Text('Perfil'),
+        //                 onTap: () {
+        //                   Navigator.pop(context);
+        //                   _showProfileDialog(context);
+        //                 },
+        //               ),
+        //             ),
+        //             PopupMenuItem(
+        //               child: ListTile(
+        //                 title: Text('Cerrar Sesión'),
+        //                 onTap: () {
+        //                   Navigator.pop(context);
+        //                   _signOut(context);
+        //                 },
+        //               ),
+        //             ),
+        //           ];
+        //         },
+        //       ),
+        //     ],
+        //   ),
+        // ],
+        // ------------------- ACTION -------------------
+       actions: [
+  Row(
+    children: [
+      StreamBuilder<int>(
+        stream: _betCoinsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator();
+          }
+          int betCoins = snapshot.data ?? 0;
+          return Text('BetCoins: $betCoins');
+        },
+      ),
+      PopupMenuButton(
+        itemBuilder: (BuildContext context) {
+          return [
+            PopupMenuItem(
+              child: ListTile(
+                title: Text('Perfil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showProfileDialog(context);
                 },
               ),
-            ],
-          ),
-        ],
+            ),
+            PopupMenuItem(
+              child: ListTile(
+                title: Text('Cerrar Sesión'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _signOut(context);
+                },
+              ),
+            ),
+          ];
+        },
+      ),
+    ],
+  ),
+],
+
+
       ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
