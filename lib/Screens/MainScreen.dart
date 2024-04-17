@@ -7,6 +7,7 @@ import 'package:betamigo/Screens/Authentication/SignInScreen.dart';
 import 'package:betamigo/Widgets/BettingWidget.dart';
 import 'package:betamigo/Widgets/LeagueSelectionWidget.dart';
 import 'package:betamigo/Widgets/SocialWidget.dart';
+import 'package:betamigo/Widgets/BetCoinWidget.dart'; // Importa el widget BetCoinWidget
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key});
@@ -18,6 +19,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late String _profileImageId = '';
+  late int _betCoins = 0; // Agrega una variable para almacenar los BetCoins
+
   final List<String> _imageIds = [
     'usuario1',
     'usuario2',
@@ -46,6 +49,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _loadProfileImageId();
+    _loadBetCoins(); // Carga los BetCoins al inicializar la pantalla
   }
 
   Future<void> _loadProfileImageId() async {
@@ -56,6 +60,18 @@ class _MainScreenState extends State<MainScreen> {
       String profileImageId = userData.get('profileImageid');
       setState(() {
         _profileImageId = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
+      });
+    }
+  }
+
+  Future<void> _loadBetCoins() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot<Map<String, dynamic>> userData =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      int betCoins = userData.get('betCoins');
+      setState(() {
+        _betCoins = betCoins;
       });
     }
   }
@@ -117,29 +133,34 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         actions: [
-          PopupMenuButton(
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  child: ListTile(
-                    title: Text('Perfil'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showProfileDialog(context);
-                    },
-                  ),
-                ),
-                PopupMenuItem(
-                  child: ListTile(
-                    title: Text('Cerrar Sesión'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _signOut(context);
-                    },
-                  ),
-                ),
-              ];
-            },
+          Row(
+            children: [
+              Text('BetCoins: $_betCoins'), // Muestra el número de BetCoins
+              PopupMenuButton(
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem(
+                      child: ListTile(
+                        title: Text('Perfil'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showProfileDialog(context);
+                        },
+                      ),
+                    ),
+                    PopupMenuItem(
+                      child: ListTile(
+                        title: Text('Cerrar Sesión'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _signOut(context);
+                        },
+                      ),
+                    ),
+                  ];
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -177,6 +198,13 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             ListTile(
+              title: Text('Recompensa Diaria'), // Agrega la opción del drawer para la recompensa diaria
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => BetCoinWidget()));
+              },
+            ),
+            ListTile(
               title: Text('Cerrar Sesión'),
               onTap: () {
                 _signOut(context);
@@ -187,6 +215,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
+
 
 Future<void> _showProfileDialog(BuildContext context) async {
   User? user = FirebaseAuth.instance.currentUser;
