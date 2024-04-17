@@ -26,10 +26,44 @@ class _SocialWidgetState extends State<SocialWidget> {
   TextEditingController _amigoController = TextEditingController();
   TextEditingController _grupoController = TextEditingController();
 
-  void _aceptarSolicitud(String from) {
-  // Agregar al amigo a la lista de amigos
+  // void _aceptarSolicitud(String from) {
+  //   // Agregar al amigo a la lista de amigos
+  //   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
+  //     'amigos': FieldValue.arrayUnion([from])
+  //   });
+
+  //   // Eliminar la solicitud de amistad pendiente
+  //   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
+  //     .where('from', isEqualTo: from)
+  //     .get()
+  //     .then((QuerySnapshot querySnapshot) {
+  //       querySnapshot.docs.forEach((doc) {
+  //         doc.reference.delete();
+  //       });
+  //     });
+
+  //   // Actualizar la lista de solicitudes en la interfaz
+  //   setState(() {
+  //     solicitudes.removeWhere((solicitud) => solicitud == from);
+  //   });
+  // }
+void _aceptarSolicitud(String from) {
+  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  // Agregar al amigo a la lista de amigos del usuario actual
   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
     'amigos': FieldValue.arrayUnion([from])
+  });
+
+  // Agregar al usuario actual a la lista de amigos del usuario que envió la solicitud
+  FirebaseFirestore.instance.collection('users').where('email', isEqualTo: from).get().then((QuerySnapshot querySnapshot) {
+    if (querySnapshot.docs.isNotEmpty) {
+      String usuarioSolicitudId = querySnapshot.docs.first.id;
+      
+      FirebaseFirestore.instance.collection('users').doc(usuarioSolicitudId).update({
+        'amigos': FieldValue.arrayUnion([usuarioActualId])
+      });
+    }
   });
 
   // Eliminar la solicitud de amistad pendiente
@@ -47,6 +81,7 @@ class _SocialWidgetState extends State<SocialWidget> {
     solicitudes.removeWhere((solicitud) => solicitud == from);
   });
 }
+
 
 Widget _buildSolicitudesTab() {
   return Padding(
@@ -373,41 +408,168 @@ Widget build(BuildContext context) {
     );
   }
 
-  void _crearGrupo(List<String> amigosSeleccionados) {
-    String nombreGrupo = _grupoController.text.trim();
-    if (nombreGrupo.isNotEmpty && amigosSeleccionados.isNotEmpty) {
-      setState(() {
-        grupos.add({
-          'nombre': nombreGrupo,
-          'miembros': List<String>.from(amigosSeleccionados),
+//   void _crearGrupo(List<String> amigosSeleccionados) {
+//   String nombreGrupo = _grupoController.text.trim();
+//   String usuarioActual = FirebaseAuth.instance.currentUser?.displayName ?? '';
+
+//   if (nombreGrupo.isNotEmpty && amigosSeleccionados.isNotEmpty) {
+//     // Añadir al usuario actual a la lista de amigos seleccionados
+//     if (!amigosSeleccionados.contains(usuarioActual)) {
+//       amigosSeleccionados.add(usuarioActual);
+//     }
+
+//     setState(() {
+//       grupos.add({
+//         'nombre': nombreGrupo,
+//         'miembros': List<String>.from(amigosSeleccionados),
+//       });
+//       _grupoController.clear();
+//     });
+
+//     // Guardar el grupo en Firestore
+//     FirebaseFirestore.instance.collection('grupos').add({
+//       'nombre': nombreGrupo,
+//       'miembros': amigosSeleccionados,
+//     });
+//   } else {
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           title: Text('Error'),
+//           content: Text('Debes ingresar un nombre para el grupo y seleccionar al menos un amigo.'),
+//           actions: <Widget>[
+//             TextButton(
+//               onPressed: () {
+//                 Navigator.of(context).pop();
+//               },
+//               child: Text('OK'),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+// }
+
+void _crearGrupo(List<String> amigosSeleccionados) {
+  String nombreGrupo = _grupoController.text.trim();
+  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  if (nombreGrupo.isNotEmpty && amigosSeleccionados.isNotEmpty) {
+    // Obtener el documento del usuario actual
+    FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get().then((DocumentSnapshot<Map<String, dynamic>> documentSnapshot) {
+      if (documentSnapshot.exists) {
+        String usuarioActual = documentSnapshot.data()?['user'] ?? ''; // Asumiendo que 'user' es el campo que contiene el nombre del usuario
+
+        // Verificar si el nombre del grupo es único
+        FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: nombreGrupo).get().then((QuerySnapshot querySnapshot) {
+          if (querySnapshot.docs.isNotEmpty) {
+            // Mostrar un mensaje de error si el nombre del grupo ya existe
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Error'),
+                  content: Text('El nombre del grupo ya existe. Por favor, elige otro nombre.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('OK'),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            // Si el nombre del grupo es único, añadir al usuario actual como miembro y guardar en Firestore
+            amigosSeleccionados.add(usuarioActual); // Añadir el nombre del usuario actual como miembro
+
+            // Convertir la lista a una lista mutable
+            List<String> miembros = List<String>.from(amigosSeleccionados);
+
+            setState(() {
+              grupos.add({
+                'nombre': nombreGrupo,
+                'miembros': miembros,
+              });
+              _grupoController.clear();
+            });
+
+            // Guardar el grupo en Firestore
+            FirebaseFirestore.instance.collection('grupos').add({
+              'nombre': nombreGrupo,
+              'miembros': miembros,
+            });
+          }
         });
-        _grupoController.clear();
-      });
-      // Guardar el grupo en Firestore
-      FirebaseFirestore.instance.collection('grupos').add({
-        'nombre': nombreGrupo,
-        'miembros': amigosSeleccionados,
-      });
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('Debes ingresar un nombre para el grupo y seleccionar al menos un amigo.'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    }
+      }
+    });
+  } else {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text('Debes ingresar un nombre para el grupo y seleccionar al menos un amigo.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
+}
+
+
+
+
+
+
+
+
+  // void _crearGrupo(List<String> amigosSeleccionados) {
+  //   String nombreGrupo = _grupoController.text.trim();
+  //   if (nombreGrupo.isNotEmpty && amigosSeleccionados.isNotEmpty) {
+  //     setState(() {
+  //       grupos.add({
+  //         'nombre': nombreGrupo,
+  //         'miembros': List<String>.from(amigosSeleccionados),
+  //       });
+  //       _grupoController.clear();
+  //     });
+  //     // Guardar el grupo en Firestore
+  //     FirebaseFirestore.instance.collection('grupos').add({
+  //       'nombre': nombreGrupo,
+  //       'miembros': amigosSeleccionados,
+  //     });
+  //   } else {
+  //     showDialog(
+  //       context: context,
+  //       builder: (BuildContext context) {
+  //         return AlertDialog(
+  //           title: Text('Error'),
+  //           content: Text('Debes ingresar un nombre para el grupo y seleccionar al menos un amigo.'),
+  //           actions: <Widget>[
+  //             TextButton(
+  //               onPressed: () {
+  //                 Navigator.of(context).pop();
+  //               },
+  //               child: Text('OK'),
+  //             ),
+  //           ],
+  //         );
+  //       },
+  //     );
+  //   }
+  // }
 
   void _mostrarDetalleAmigo(String amigo) {
     FirebaseFirestore.instance.collection('users')
