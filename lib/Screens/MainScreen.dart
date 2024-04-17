@@ -39,6 +39,29 @@ class _MainScreenState extends State<MainScreen> {
     'usuario15'
   ];
 
+  final List<String> _imageTeamIds = [
+    'barcelona',
+    'madrid',
+    'atleticoMadrid',
+    'girona',
+    'chelsea',
+    'liverpool',
+    'city',
+    'united',
+    'arsenal',
+    'leverkusen',
+    'munchen',
+    'dortmund',
+    'psg',
+    'monaco',
+    'lyon',
+    'marsella',
+    'inter',
+    'milan',
+    'juventus',
+    'napoli'
+  ];
+
   static final List<Widget> _widgetOptions = <Widget>[
     LeagueSelectionWidget(),
     SocialWidget(),
@@ -220,8 +243,6 @@ class _MainScreenState extends State<MainScreen> {
 Future<void> _showProfileDialog(BuildContext context) async {
   User? user = FirebaseAuth.instance.currentUser;
   if (user != null) {
-    List<String> imageIds = _imageIds;
-
     DocumentSnapshot<Map<String, dynamic>> userData =
         await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     String username = userData.get('user');
@@ -232,6 +253,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
       context: context,
       builder: (BuildContext context) {
         String selectedImageId = _profileImageId;
+        String selectedTab = 'CHARACTERS'; // Por defecto, mostrar la pestaña de personajes
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
@@ -240,10 +262,12 @@ Future<void> _showProfileDialog(BuildContext context) async {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Contenido del perfil (nombre de usuario, email, imagen de perfil)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       CircleAvatar(
-                        radius: 30,
+                        radius: 60,
                         backgroundColor: Colors.transparent,
                         backgroundImage: profileImageId.isNotEmpty ? NetworkImage(profileImageId) : null, // Mostrar la imagen de perfil almacenada en Firebase
                       ),
@@ -251,49 +275,135 @@ Future<void> _showProfileDialog(BuildContext context) async {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Username: $username'),
+                          const Text(
+                            'Username:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            username,
+                            style: TextStyle(fontSize: 16),
+                          ),
                           SizedBox(height: 8),
-                          Text('Email: $email'),
+                          const Text(
+                            'Email:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            email,
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ],
                       ),
                     ],
                   ),
                   SizedBox(height: 16),
-                  Text('Selecciona tu imagen de perfil:'),
-                  SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8.0,
-                    runSpacing: 8.0,
-                    children: imageIds.map((imageId) {
-                      return GestureDetector(
+                  // Selector de pestañas para personajes y equipos
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
                         onTap: () {
                           setState(() {
-                            selectedImageId = imageId;
+                            selectedTab = 'CHARACTERS';
                           });
-                          _pickAndSetImage(imageId); // Actualiza la imagen de perfil cuando se selecciona una imagen
                         },
-                        child: Container(
-                          padding: EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
-                              width: 4,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.transparent,
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/imagenuser/$imageId.png',
-                                fit: BoxFit.cover,
-                              ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            'PERSONAJES',
+                            style: TextStyle(
+                              color: selectedTab == 'CHARACTERS' ? Colors.blue : Colors.grey,
+                              fontSize: 16,
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedTab = 'TEAMS';
+                          });
+                        },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            'EQUIPOS',
+                            style: TextStyle(
+                              color: selectedTab == 'TEAMS' ? Colors.blue : Colors.grey,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  // Imágenes según la pestaña seleccionada
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: Wrap(
+                        spacing: 16.0,
+                        runSpacing: 16.0,
+                        children: selectedTab == 'CHARACTERS'
+                            ? _imageIds.map((imageId) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedImageId = imageId;
+                                    });
+                                    _pickAndSetImage(imageId); // Actualiza la imagen de perfil cuando se selecciona una imagen
+                                  },
+                                  child: Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(50),
+                                      border: Border.all(
+                                        color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
+                                        width: 4,
+                                      ),
+                                      image: DecorationImage(
+                                        image: AssetImage('assets/imagenuser/$imageId.png'),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList()
+                            : _imageTeamIds.map((imageId) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedImageId = imageId;
+                                    });
+                                    _pickAndSetImage(imageId); // Actualiza la imagen de perfil cuando se selecciona una imagen
+                                  },
+                                  child: Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(50),
+                                      border: Border.all(
+                                        color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
+                                        width: 4,
+                                      ),
+                                      image: DecorationImage(
+                                        image: AssetImage('assets/imagenuser/$imageId.png'),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -321,6 +431,8 @@ Future<void> _showProfileDialog(BuildContext context) async {
     );
   }
 }
+
+
 
 
   Future<void> _signOut(BuildContext context) async {
