@@ -8,15 +8,15 @@ class BetCoinWidget extends StatefulWidget {
   _BetCoinWidgetState createState() => _BetCoinWidgetState();
 }
 
-class _BetCoinWidgetState extends State<BetCoinWidget> {
+class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateMixin {
   late User _user;
   int _betCoins = 0;
   int _dayCount = 0;
   late DateTime _lastClaimDate = DateTime.now();
   late Timer _timer;
   late Duration _timeRemaining = Duration();
-
-  List<int> dailyRewards = [10, 10, 10, 10, 20, 40, 100];
+  bool _claimingReward = false;
+  late AnimationController _animationController;
 
   @override
   void initState() {
@@ -25,12 +25,21 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
     _loadBetCoins();
     _loadLastClaimDate();
     _startTimer();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1500), // Duración de la animación
+    );
   }
 
   @override
   void dispose() {
     _timer.cancel();
+    _animationController.dispose(); // Importante liberar los recursos del AnimationController
     super.dispose();
+  }
+
+  void _startAnimation() {
+    _animationController.forward(from: 0);
   }
 
   void _loadBetCoins() async {
@@ -55,7 +64,7 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
     });
   }
 
-  void _claimDailyReward(int reward, int dayIndex) async {
+  void _claimDailyReward(int dayIndex) async {
     DateTime now = DateTime.now();
     DateTime lastMidnight = DateTime(now.year, now.month, now.day);
 
@@ -73,7 +82,27 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
       return;
     }
 
+    int reward = 0;
+    if (dayIndex < 4) {
+      reward = 10;
+    } else if (dayIndex == 4) {
+      reward = 20;
+    } else if (dayIndex == 5) {
+      reward = 40;
+    } else if (dayIndex == 6) {
+      reward = 100;
+    }
+
     setState(() {
+      _claimingReward = true;
+    });
+
+    _startAnimation(); // Iniciar la animación
+
+    await Future.delayed(Duration(milliseconds: 1500)); // Simula un pequeño retraso para la animación
+
+    setState(() {
+      _claimingReward = false;
       _betCoins += reward;
       _dayCount++;
       _lastClaimDate = lastMidnight; // Actualizar la fecha del último reclamo
@@ -121,78 +150,119 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Recompensa Diaria'),
+        title: Text('Recompensa Diaria', style: TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        automaticallyImplyLeading: !_claimingReward, // Deshabilitar el botón de retroceso si se está reclamando la recompensa
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Tienes $_betCoins BetCoin',
-              style: TextStyle(fontSize: 20),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Próxima recompensa diaria en: ${_formatDuration(_timeRemaining)}',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 20),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              children: List.generate(7, (index) {
-                int reward = dailyRewards[index]; // Obtener la recompensa del día correspondiente
-                bool isCurrentDay = _dayCount == index;
-                bool isPastDay = _dayCount > index;
-                bool isFutureDay = _dayCount < index;
+      body: Stack(
+        children: [
+          AnimatedBackground(),
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 20),
+                Text(
+                  'Próxima recompensa diaria en: ${_formatDuration(_timeRemaining)}',
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+                SizedBox(height: 20),
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 3,
+                    children: List.generate(7, (index) {
+                      bool isCurrentDay = _dayCount == index;
+                      bool isPastDay = _dayCount > index;
+                      bool isFutureDay = _dayCount < index;
 
-                return GestureDetector(
-                  onTap: () {
-                    _claimDailyReward(reward, index);
-                  },
-                  child: Card(
-                    elevation: 4,
-                    color: isCurrentDay ? Colors.blue : (isPastDay ? Colors.green : Colors.grey),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Día ${index + 1}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                      int reward = 0;
+                      if (index < 4) {
+                        reward = 10;
+                      } else if (index == 4) {
+                        reward = 20;
+                      } else if (index == 5) {
+                        reward = 40;
+                      } else if (index == 6) {
+                        reward = 100;
+                      }
+
+                      return GestureDetector(
+                        onTap: () {
+                          _claimDailyReward(index);
+                        },
+                        child: Card(
+                          elevation: 4,
+                          color: isCurrentDay ? Colors.blue : (isPastDay ? Colors.green : Colors.grey),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (_claimingReward && isCurrentDay)
+                                AnimatedBuilder(
+                                  animation: _animationController,
+                                  builder: (context, child) {
+                                    return Transform.scale(
+                                      scale: _animationController.value * 0.5 + 1, // Escala de 1 a 1.5
+                                      child: Opacity(
+                                        opacity: 1 - _animationController.value, // Opacidad de 1 a 0
+                                        child: Image.asset(
+                                          'assets/coin.png',
+                                          width: 100,
+                                          height: 100,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Día ${index + 1}',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Recompensa: $reward',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    if (isCurrentDay)
+                                      Icon(
+                                        Icons.lock_open,
+                                        color: Colors.white,
+                                      )
+                                    else if (isPastDay)
+                                      Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Recompensa: $reward',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          if (isCurrentDay)
-                            Icon(
-                              Icons.lock_open,
-                              color: Colors.white,
-                            )
-                          else if (isPastDay)
-                            Icon(
-                              Icons.check,
-                              color: Colors.white,
-                            ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    }),
                   ),
-                );
-              }),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -209,11 +279,33 @@ class _BetCoinWidgetState extends State<BetCoinWidget> {
   }
 }
 
+class AnimatedBackground extends StatefulWidget {
+  @override
+  _AnimatedBackgroundState createState() => _AnimatedBackgroundState();
+}
+
+class _AnimatedBackgroundState extends State<AnimatedBackground> {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: Duration(seconds: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.purple.shade700, Colors.deepPurple.shade900],
+          stops: [0.0, 0.5],
+        ),
+      ),
+    );
+  }
+}
+
 void main() {
   runApp(MaterialApp(
     title: 'BetCoin App',
     theme: ThemeData(
-      primarySwatch: Colors.blue,
+      primarySwatch: Colors.deepPurple,
     ),
     home: BetCoinWidget(),
   ));
