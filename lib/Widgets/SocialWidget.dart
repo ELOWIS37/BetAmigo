@@ -8,11 +8,13 @@ void main() {
     theme: ThemeData(
       primarySwatch: Colors.blue,
     ),
-    home: SocialWidget(),
+    home: const SocialWidget(),
   ));
 }
 
 class SocialWidget extends StatefulWidget {
+  const SocialWidget({super.key});
+
   @override
   _SocialWidgetState createState() => _SocialWidgetState();
 }
@@ -23,8 +25,8 @@ class _SocialWidgetState extends State<SocialWidget> {
   List<String> solicitudes = [];
   late String? usuarioActualId;
 
-  TextEditingController _amigoController = TextEditingController();
-  TextEditingController _grupoController = TextEditingController();
+  final TextEditingController _amigoController = TextEditingController();
+  final TextEditingController _grupoController = TextEditingController();
 
   // void _aceptarSolicitud(String from) {
   //   // Agregar al amigo a la lista de amigos
@@ -83,9 +85,54 @@ void _aceptarSolicitud(String from) {
 }
 
 
+// Widget _buildSolicitudesTab() {
+//   return Padding(
+//     padding: const EdgeInsets.all(16.0),
+//     child: StreamBuilder<List<String>>(
+//       stream: _cargarSolicitudes(),
+//       builder: (context, snapshot) {
+//         if (snapshot.hasError) {
+//           return Center(child: Text('Error: ${snapshot.error}'));
+//         }
+
+//         if (snapshot.connectionState == ConnectionState.waiting) {
+//           return const Center(child: CircularProgressIndicator());
+//         }
+
+//         final solicitudes = snapshot.data ?? [];
+
+//         return solicitudes.isEmpty
+//           ? const Center(
+//               child: Text(
+//                 'No hay solicitudes de amistad pendientes.',
+//                 style: TextStyle(fontSize: 18.0),
+//               ),
+//             )
+//           : Expanded(
+//               child: ListView.builder(
+//                 itemCount: solicitudes.length,
+//                 itemBuilder: (context, index) {
+//                   final solicitud = solicitudes[index];
+//                   return ListTile(
+//                     title: Text('Solicitud de amistad de $solicitud'),
+//                     trailing: ElevatedButton(
+//                       onPressed: () {
+//                         _aceptarSolicitud(solicitud);
+//                       },
+//                       child: const Text('Aceptar'),
+//                     ),
+//                   );
+//                 },
+//               ),
+//             );
+//       },
+//     ),
+//   );
+// }
+
 Widget _buildSolicitudesTab() {
   return Padding(
-    padding: EdgeInsets.all(16.0),
+    padding: const EdgeInsets.all(16.0),
     child: StreamBuilder<List<String>>(
       stream: _cargarSolicitudes(),
       builder: (context, snapshot) {
@@ -94,13 +141,13 @@ Widget _buildSolicitudesTab() {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
         final solicitudes = snapshot.data ?? [];
 
         return solicitudes.isEmpty
-          ? Center(
+          ? const Center(
               child: Text(
                 'No hay solicitudes de amistad pendientes.',
                 style: TextStyle(fontSize: 18.0),
@@ -113,11 +160,26 @@ Widget _buildSolicitudesTab() {
                   final solicitud = solicitudes[index];
                   return ListTile(
                     title: Text('Solicitud de amistad de $solicitud'),
-                    trailing: ElevatedButton(
-                      onPressed: () {
-                        _aceptarSolicitud(solicitud);
-                      },
-                      child: Text('Aceptar'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            _aceptarSolicitud(solicitud);
+                          },
+                          child: const Text('Aceptar'),
+                        ),
+                        SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: () {
+                            _denegarSolicitud(solicitud);
+                          },
+                          child: const Text('Denegar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -126,6 +188,25 @@ Widget _buildSolicitudesTab() {
       },
     ),
   );
+}
+
+void _denegarSolicitud(String from) {
+  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  // Eliminar la solicitud de amistad pendiente
+  FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
+    .where('from', isEqualTo: from)
+    .get()
+    .then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        doc.reference.delete();
+      });
+    });
+
+  // Actualizar la lista de solicitudes en la interfaz
+  setState(() {
+    solicitudes.removeWhere((solicitud) => solicitud == from);
+  });
 }
 
 
@@ -137,8 +218,8 @@ Widget build(BuildContext context) {
     length: 3, // Ajustar el número de pestañas según sea necesario
     child: Scaffold(
       appBar: AppBar(
-        title: Text('Social y Amigos'),
-        bottom: TabBar(
+        title: const Text('Social y Amigos'),
+        bottom: const TabBar(
           tabs: [
             Tab(text: 'Amigos'),
             Tab(text: 'Grupos'),
@@ -147,7 +228,7 @@ Widget build(BuildContext context) {
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -172,7 +253,7 @@ Widget build(BuildContext context) {
 
   Widget _buildAmigosTab() {
     return Padding(
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -187,7 +268,7 @@ Widget build(BuildContext context) {
               fillColor: Colors.white.withOpacity(0.8),
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           ElevatedButton(
             onPressed: () {
               _enviarSolicitudAmistad(_amigoController.text);
@@ -197,11 +278,11 @@ Widget build(BuildContext context) {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10.0),
               ),
-              textStyle: TextStyle(color: Colors.black),
+              textStyle: const TextStyle(color: Colors.black),
             ),
-            child: Text('Enviar Solicitud de Amistad'),
+            child: const Text('Enviar Solicitud de Amistad'),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           Expanded(
             child: ListView.builder(
               itemCount: amigos.length,
@@ -212,7 +293,7 @@ Widget build(BuildContext context) {
                   },
                   child: Card(
                     elevation: 4.0,
-                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
                     child: ListTile(
                       title: Text(
                         amigos[index],
@@ -460,7 +541,7 @@ void _crearGrupo(List<String> amigosSeleccionados) {
     // Obtener el documento del usuario actual
     FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get().then((DocumentSnapshot<Map<String, dynamic>> documentSnapshot) {
       if (documentSnapshot.exists) {
-        String usuarioActual = documentSnapshot.data()?['user'] ?? ''; // Asumiendo que 'user' es el campo que contiene el nombre del usuario
+        String usuarioActual = documentSnapshot.data()?['user'] ?? ''; //  'user' es el campo que contiene el nombre del usuario
 
         // Verificar si el nombre del grupo es único
         FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: nombreGrupo).get().then((QuerySnapshot querySnapshot) {
@@ -527,12 +608,6 @@ void _crearGrupo(List<String> amigosSeleccionados) {
     );
   }
 }
-
-
-
-
-
-
 
 
   // void _crearGrupo(List<String> amigosSeleccionados) {
