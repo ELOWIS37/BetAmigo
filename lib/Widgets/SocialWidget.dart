@@ -48,41 +48,6 @@ class _SocialWidgetState extends State<SocialWidget> {
   });
 }
 
-// Widget _buildSolicitudesTab() {
-//   return Padding(
-//     padding: EdgeInsets.all(16.0),
-//     child: Column(
-//       crossAxisAlignment: CrossAxisAlignment.stretch,
-//       children: <Widget>[
-//         solicitudes.isEmpty
-//             ? Center(
-//                 child: Text(
-//                   'No hay solicitudes de amistad pendientes.',
-//                   style: TextStyle(fontSize: 18.0),
-//                 ),
-//               )
-//             : Expanded(
-//                 child: ListView.builder(
-//                   itemCount: solicitudes.length,
-//                   itemBuilder: (context, index) {
-//                     final solicitud = solicitudes[index];
-//                     return ListTile(
-//                       title: Text('Solicitud de amistad de $solicitud'),
-//                       trailing: ElevatedButton(
-//                         onPressed: () {
-//                           _aceptarSolicitud(solicitud);
-//                         },
-//                         child: Text('Aceptar'),
-//                       ),
-//                     );
-//                   },
-//                 ),
-//               ),
-//       ],
-//     ),
-//   );
-// }
-
 Widget _buildSolicitudesTab() {
   return Padding(
     padding: EdgeInsets.all(16.0),
@@ -128,6 +93,9 @@ Widget _buildSolicitudesTab() {
   );
 }
 
+
+
+
 @override
 Widget build(BuildContext context) {
   return DefaultTabController(
@@ -167,139 +135,64 @@ Widget build(BuildContext context) {
 }
 
 
-  // Widget _buildAmigosTab() {
-  //   return Padding(
-  //     padding: EdgeInsets.all(16.0),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.stretch,
-  //       children: <Widget>[
-  //         TextField(
-  //           controller: _amigoController,
-  //           decoration: InputDecoration(
-  //             hintText: 'Nombre de amigo',
-  //             border: OutlineInputBorder(
-  //               borderRadius: BorderRadius.circular(10.0),
-  //             ),
-  //             filled: true,
-  //             fillColor: Colors.white.withOpacity(0.8),
-  //           ),
-  //         ),
-  //         SizedBox(height: 10),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             _enviarSolicitudAmistad(_amigoController.text);
-  //           },
-  //           style: ElevatedButton.styleFrom(
-  //             backgroundColor: Colors.white,
-  //             shape: RoundedRectangleBorder(
-  //               borderRadius: BorderRadius.circular(10.0),
-  //             ),
-  //             textStyle: TextStyle(color: Colors.black),
-  //           ),
-  //           child: Text('Enviar Solicitud de Amistad'),
-  //         ),
-  //         SizedBox(height: 20),
-  //         Expanded(
-  //           child: ListView.builder(
-  //             itemCount: amigos.length,
-  //             itemBuilder: (context, index) {
-  //               return GestureDetector(
-  //                 onTap: () {
-  //                   _mostrarDetalleAmigo(amigos[index]);
-  //                 },
-  //                 child: Card(
-  //                   elevation: 4.0,
-  //                   margin: EdgeInsets.symmetric(vertical: 8.0),
-  //                   child: ListTile(
-  //                     title: Text(
-  //                       amigos[index],
-  //                       style: TextStyle(fontSize: 18.0),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               );
-  //             },
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _buildAmigosTab() {
-  return Padding(
-    padding: EdgeInsets.all(16.0),
-    child: StreamBuilder<List<String>>(
-      stream: _cargarAmigosUsuario(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-
-        final amigos = snapshot.data ?? [];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            TextField(
-              controller: _amigoController,
-              decoration: InputDecoration(
-                hintText: 'Nombre de amigo',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.8),
+    return Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TextField(
+            controller: _amigoController,
+            decoration: InputDecoration(
+              hintText: 'Nombre de amigo',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
               ),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.8),
             ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                _enviarSolicitudAmistad(_amigoController.text);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                textStyle: TextStyle(color: Colors.black),
+          ),
+          SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () {
+              _enviarSolicitudAmistad(_amigoController.text);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
               ),
-              child: Text('Enviar Solicitud de Amistad'),
+              textStyle: TextStyle(color: Colors.black),
             ),
-            SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: amigos.length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () {
-                      _mostrarDetalleAmigo(amigos[index]);
-                    },
-                    child: Card(
-                      elevation: 4.0,
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      child: ListTile(
-                        title: Text(
-                          amigos[index],
-                          style: TextStyle(fontSize: 18.0),
-                        ),
+            child: Text('Enviar Solicitud de Amistad'),
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: ListView.builder(
+              itemCount: amigos.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () {
+                    _mostrarDetalleAmigo(amigos[index]);
+                  },
+                  child: Card(
+                    elevation: 4.0,
+                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    child: ListTile(
+                      title: Text(
+                        amigos[index],
+                        style: TextStyle(fontSize: 18.0),
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        );
-      },
-    ),
-  );
-}
-
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildGruposTab() {
     return Padding(
@@ -613,20 +506,15 @@ Widget build(BuildContext context) {
     usuarioActualId = FirebaseAuth.instance.currentUser?.uid;
   }
 
-  // void _cargarAmigosUsuario() {
-  //   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get().then((DocumentSnapshot documentSnapshot) {
-  //     if (documentSnapshot.exists) {
-  //       setState(() {
-  //         amigos = List<String>.from((documentSnapshot.data() as Map<String, dynamic>)['amigos']);
-  //       });
-  //     }
-  //   });
-  // }
-  Stream<List<String>> _cargarAmigosUsuario() {
-  return FirebaseFirestore.instance.collection('users').doc(usuarioActualId).snapshots()
-    .map((documentSnapshot) => List<String>.from((documentSnapshot.data() as Map<String, dynamic>)['amigos']));
+  void _cargarAmigosUsuario() {
+    FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        setState(() {
+          amigos = List<String>.from((documentSnapshot.data() as Map<String, dynamic>)['amigos']);
+        });
+      }
+    });
   }
-
 
   void _cargarGrupos() async {
   // Obtener el nombre de usuario actual
