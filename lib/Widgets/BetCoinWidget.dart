@@ -64,7 +64,7 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
     });
   }
 
-  void _claimDailyReward(int reward, int dayIndex) async {
+  void _claimDailyReward(int dayIndex) async {
     DateTime now = DateTime.now();
     DateTime lastMidnight = DateTime(now.year, now.month, now.day);
 
@@ -80,6 +80,17 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
         content: Text('No puedes reclamar la recompensa de días anteriores.'),
       ));
       return;
+    }
+
+    int reward = 0;
+    if (dayIndex < 4) {
+      reward = 10;
+    } else if (dayIndex == 4) {
+      reward = 20;
+    } else if (dayIndex == 5) {
+      reward = 40;
+    } else if (dayIndex == 6) {
+      reward = 100;
     }
 
     setState(() {
@@ -163,14 +174,24 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
                   child: GridView.count(
                     crossAxisCount: 3,
                     children: List.generate(7, (index) {
-                      int reward = index == 6 ? 20 : 10; // Recompensa de 20 para el séptimo día, 10 para los demás
                       bool isCurrentDay = _dayCount == index;
                       bool isPastDay = _dayCount > index;
                       bool isFutureDay = _dayCount < index;
 
+                      int reward = 0;
+                      if (index < 4) {
+                        reward = 10;
+                      } else if (index == 4) {
+                        reward = 20;
+                      } else if (index == 5) {
+                        reward = 40;
+                      } else if (index == 6) {
+                        reward = 100;
+                      }
+
                       return GestureDetector(
                         onTap: () {
-                          _claimDailyReward(reward, index);
+                          _claimDailyReward(index);
                         },
                         child: Card(
                           elevation: 4,
@@ -257,7 +278,6 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 }
-
 
 class AnimatedBackground extends StatefulWidget {
   @override
