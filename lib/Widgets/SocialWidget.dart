@@ -112,7 +112,7 @@ class _SocialWidgetState extends State<SocialWidget> {
 
   Widget _buildGruposTab() {
     return Padding(
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[

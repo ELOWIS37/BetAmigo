@@ -68,6 +68,8 @@ class _MainScreenState extends State<MainScreen> {
     BettingWidget(),
   ];
 
+  final ValueNotifier<String> _profileImageIdNotifier = ValueNotifier<String>('');
+
   @override
   void initState() {
     super.initState();
@@ -75,17 +77,29 @@ class _MainScreenState extends State<MainScreen> {
     _loadBetCoins(); // Carga los BetCoins al inicializar la pantalla
   }
 
+  // Future<void> _loadProfileImageId() async {
+  //   User? user = FirebaseAuth.instance.currentUser;
+  //   if (user != null) {
+  //     DocumentSnapshot<Map<String, dynamic>> userData =
+  //         await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  //     String profileImageId = userData.get('profileImageid');
+  //     setState(() {
+  //       _profileImageId = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
+  //     });
+  //   }
+  // }
   Future<void> _loadProfileImageId() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      DocumentSnapshot<Map<String, dynamic>> userData =
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      String profileImageId = userData.get('profileImageid');
-      setState(() {
-        _profileImageId = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
-      });
-    }
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    DocumentSnapshot<Map<String, dynamic>> userData =
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    String profileImageId = userData.get('profileImageid');
+    _profileImageIdNotifier.value = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
   }
+}
+
+
+
 
   Future<void> _loadBetCoins() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -209,14 +223,29 @@ class _MainScreenState extends State<MainScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () => _showProfileDialog(context),
-                    child: CircleAvatar(
-                      radius: 40,
-                      // Utilizamos la ruta local almacenada en _profileImageId para cargar la imagen de perfil
-                      backgroundImage: _profileImageId.isNotEmpty ? AssetImage('assets/imagenuser/$_profileImageId.png') : null,
-                    ),
-                  ),
+                  // GestureDetector(
+                  //   onTap: () => _showProfileDialog(context),
+                
+                  //   child: CircleAvatar(
+                  //     radius: 40,
+                  //     backgroundImage: _profileImageIdNotifier.value.isNotEmpty ? AssetImage(_profileImageIdNotifier.value) : null,
+                  //   ),
+                  // ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: _profileImageIdNotifier,
+                    builder: (context, profileImageId, child) {
+                      return GestureDetector(
+                        onTap: () => _showProfileDialog(context),
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundImage: profileImageId.isNotEmpty ? AssetImage(profileImageId) : null,
+                        ),
+                      );
+                    },
+                  )
+
+
+
                 ],
               ),
             ),
@@ -445,30 +474,49 @@ Future<void> _showProfileDialog(BuildContext context) async {
   }
 
   // Este método guarda la ruta local de la imagen seleccionada en Firestore
+// Future<void> _pickAndSetImage(String imageId) async {
+//   User? user = FirebaseAuth.instance.currentUser;
+//   if (user != null) {
+//     try {
+//       String imagePath = 'assets/imagenuser/$imageId.png';
+
+//       // Obtenemos los datos actuales del usuario
+//       DocumentSnapshot<Map<String, dynamic>> userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+//       // Copiamos todos los datos actuales del usuario
+//       Map<String, dynamic> updatedUserData = userData.data() ?? {};
+//       // Actualizamos el campo profileImageid
+//       updatedUserData['profileImageid'] = imagePath;
+
+//       // Actualizamos solo el campo profileImageid en Firestore
+//       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
+
+//       setState(() {
+//         _profileImageId = imagePath; // Actualiza la URL de la imagen de perfil en el estado local
+//       });
+//     } catch (e) {
+//       print('Error setting image: $e');
+//     }
+//   }
+// }
 Future<void> _pickAndSetImage(String imageId) async {
   User? user = FirebaseAuth.instance.currentUser;
   if (user != null) {
     try {
       String imagePath = 'assets/imagenuser/$imageId.png';
-
-      // Obtenemos los datos actuales del usuario
-      DocumentSnapshot<Map<String, dynamic>> userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      // Copiamos todos los datos actuales del usuario
+      DocumentSnapshot<Map<String, dynamic>> userData =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       Map<String, dynamic> updatedUserData = userData.data() ?? {};
-      // Actualizamos el campo profileImageid
       updatedUserData['profileImageid'] = imagePath;
 
-      // Actualizamos solo el campo profileImageid en Firestore
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
 
-      setState(() {
-        _profileImageId = imagePath; // Actualiza la URL de la imagen de perfil en el estado local
-      });
+      _profileImageIdNotifier.value = imagePath; // Notifica el cambio a ValueNotifier
     } catch (e) {
       print('Error setting image: $e');
     }
   }
 }
+
 
 
 void main() {
