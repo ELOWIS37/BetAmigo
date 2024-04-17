@@ -51,37 +51,49 @@ class _SocialWidgetState extends State<SocialWidget> {
 Widget _buildSolicitudesTab() {
   return Padding(
     padding: EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        solicitudes.isEmpty
-            ? Center(
-                child: Text(
-                  'No hay solicitudes de amistad pendientes.',
-                  style: TextStyle(fontSize: 18.0),
-                ),
-              )
-            : Expanded(
-                child: ListView.builder(
-                  itemCount: solicitudes.length,
-                  itemBuilder: (context, index) {
-                    final solicitud = solicitudes[index];
-                    return ListTile(
-                      title: Text('Solicitud de amistad de $solicitud'),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          _aceptarSolicitud(solicitud);
-                        },
-                        child: Text('Aceptar'),
-                      ),
-                    );
-                  },
-                ),
+    child: StreamBuilder<List<String>>(
+      stream: _cargarSolicitudes(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        final solicitudes = snapshot.data ?? [];
+
+        return solicitudes.isEmpty
+          ? Center(
+              child: Text(
+                'No hay solicitudes de amistad pendientes.',
+                style: TextStyle(fontSize: 18.0),
               ),
-      ],
+            )
+          : Expanded(
+              child: ListView.builder(
+                itemCount: solicitudes.length,
+                itemBuilder: (context, index) {
+                  final solicitud = solicitudes[index];
+                  return ListTile(
+                    title: Text('Solicitud de amistad de $solicitud'),
+                    trailing: ElevatedButton(
+                      onPressed: () {
+                        _aceptarSolicitud(solicitud);
+                      },
+                      child: Text('Aceptar'),
+                    ),
+                  );
+                },
+              ),
+            );
+      },
     ),
   );
 }
+
+
 
 
 @override
@@ -546,13 +558,20 @@ Widget build(BuildContext context) {
   }
 }
 
-  void _cargarSolicitudes() {
-  FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes').get().then((QuerySnapshot querySnapshot) {
-    if (querySnapshot.docs.isNotEmpty) {
-      setState(() {
-        solicitudes = querySnapshot.docs.map((doc) => doc['from'] as String).toList();
-      });
-    }
-  });
+  // void _cargarSolicitudes() {
+  // FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes').get().then((QuerySnapshot querySnapshot) {
+  //   if (querySnapshot.docs.isNotEmpty) {
+  //     setState(() {
+  //       solicitudes = querySnapshot.docs.map((doc) => doc['from'] as String).toList();
+  //     });
+  //   }
+  // });
+
+  Stream<List<String>> _cargarSolicitudes() {
+  return FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
+    .snapshots()
+    .map((querySnapshot) => querySnapshot.docs.map((doc) => doc['from'] as String).toList());
+  }
+
 }
-}
+
