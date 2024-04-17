@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+void main() {
+  runApp(MaterialApp(
+    title: 'Social App',
+    theme: ThemeData(
+      primarySwatch: Colors.blue,
+    ),
+    home: SocialWidget(),
+  ));
+}
+
 class SocialWidget extends StatefulWidget {
   @override
   _SocialWidgetState createState() => _SocialWidgetState();
@@ -10,46 +20,108 @@ class SocialWidget extends StatefulWidget {
 class _SocialWidgetState extends State<SocialWidget> {
   List<String> amigos = [];
   List<Map<String, dynamic>> grupos = [];
+  List<String> solicitudes = [];
   late String? usuarioActualId;
 
   TextEditingController _amigoController = TextEditingController();
   TextEditingController _grupoController = TextEditingController();
 
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Social y Amigos'),
-          bottom: TabBar(
-            tabs: [
-              Tab(text: 'Amigos'),
-              Tab(text: 'Grupos'),
-            ],
-          ),
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.lightBlueAccent,
-                Colors.greenAccent,
-              ],
-            ),
-          ),
-          child: TabBarView(
-            children: [
-              _buildAmigosTab(),
-              _buildGruposTab(),
-            ],
-          ),
+  void _aceptarSolicitud(String from) {
+  // Agregar al amigo a la lista de amigos
+  FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
+    'amigos': FieldValue.arrayUnion([from])
+  });
+
+  // Eliminar la solicitud de amistad pendiente
+  FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
+    .where('from', isEqualTo: from)
+    .get()
+    .then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        doc.reference.delete();
+      });
+    });
+
+  // Actualizar la lista de solicitudes en la interfaz
+  setState(() {
+    solicitudes.removeWhere((solicitud) => solicitud == from);
+  });
+}
+
+Widget _buildSolicitudesTab() {
+  return Padding(
+    padding: EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        solicitudes.isEmpty
+            ? Center(
+                child: Text(
+                  'No hay solicitudes de amistad pendientes.',
+                  style: TextStyle(fontSize: 18.0),
+                ),
+              )
+            : Expanded(
+                child: ListView.builder(
+                  itemCount: solicitudes.length,
+                  itemBuilder: (context, index) {
+                    final solicitud = solicitudes[index];
+                    return ListTile(
+                      title: Text('Solicitud de amistad de $solicitud'),
+                      trailing: ElevatedButton(
+                        onPressed: () {
+                          _aceptarSolicitud(solicitud);
+                        },
+                        child: Text('Aceptar'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+      ],
+    ),
+  );
+}
+
+
+@override
+Widget build(BuildContext context) {
+  return DefaultTabController(
+    length: 3, // Ajustar el número de pestañas según sea necesario
+    child: Scaffold(
+      appBar: AppBar(
+        title: Text('Social y Amigos'),
+        bottom: TabBar(
+          tabs: [
+            Tab(text: 'Amigos'),
+            Tab(text: 'Grupos'),
+            Tab(text: 'Solicitudes'),
+          ],
         ),
       ),
-    );
-  }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.lightBlueAccent,
+              Colors.greenAccent,
+            ],
+          ),
+        ),
+        child: TabBarView(
+          children: [
+            _buildAmigosTab(),
+            _buildGruposTab(),
+            _buildSolicitudesTab(),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 
   Widget _buildAmigosTab() {
     return Padding(
@@ -71,7 +143,7 @@ class _SocialWidgetState extends State<SocialWidget> {
           SizedBox(height: 10),
           ElevatedButton(
             onPressed: () {
-              _agregarAmigo(_amigoController.text);
+              _enviarSolicitudAmistad(_amigoController.text);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
@@ -80,7 +152,7 @@ class _SocialWidgetState extends State<SocialWidget> {
               ),
               textStyle: TextStyle(color: Colors.black),
             ),
-            child: Text('Añadir Amigo'),
+            child: Text('Enviar Solicitud de Amistad'),
           ),
           SizedBox(height: 20),
           Expanded(
@@ -112,7 +184,7 @@ class _SocialWidgetState extends State<SocialWidget> {
 
   Widget _buildGruposTab() {
     return Padding(
-      padding: EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -184,65 +256,60 @@ class _SocialWidgetState extends State<SocialWidget> {
     return children;
   }
 
-  void _agregarAmigo(String amigo) {
-    if (amigos.contains(amigo)) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('El amigo ya ha sido añadido.'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      FirebaseFirestore.instance.collection('users')
-        .where('user', isEqualTo: amigo)
-        .get()
-        .then((QuerySnapshot querySnapshot) {
-          if (querySnapshot.docs.isNotEmpty) {
-            setState(() {
-              amigos.add(amigo);
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Se ha añadido a $amigo como amigo.'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
-              'amigos': FieldValue.arrayUnion([amigo])
-            });
-          } else {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text('Error'),
-                  content: Text('El usuario no existe.'),
-                  actions: <Widget>[
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: Text('OK'),
-                    ),
-                  ],
-                );
-              },
-            );
-          }
-        });
-    }
+  void _enviarSolicitudAmistad(String amigo) {
+  if (amigo == FirebaseAuth.instance.currentUser?.displayName) {
+    _mostrarError('No puedes enviarte una solicitud de amistad a ti mismo.');
+    return;
   }
+
+  if (solicitudes.contains(amigo) || amigos.contains(amigo)) {
+    _mostrarError('Ya has enviado una solicitud de amistad a este usuario o ya son amigos.');
+    return;
+  }
+
+  var user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    FirebaseFirestore.instance.collection('users').doc(user.uid).get().then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic> data = documentSnapshot.data() as Map<String, dynamic>? ?? {};
+
+        FirebaseFirestore.instance.collection('users')
+          .where('user', isEqualTo: amigo)
+          .get()
+          .then((QuerySnapshot querySnapshot) {
+            if (querySnapshot.docs.isNotEmpty) {
+              final userId = querySnapshot.docs.first.id;
+              final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+
+              // Agregar la solicitud de amistad a Firestore
+              userRef.collection('solicitudes').add({
+                'from': data['user'], // Utiliza el valor del campo 'user' del usuario actual
+                'timestamp': DateTime.now(),
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Solicitud de amistad enviada a $amigo.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            } else {
+              _mostrarError('El usuario no existe.');
+            }
+          });
+      } else {
+        _mostrarError('No se pudo encontrar el documento del usuario.');
+      }
+    });
+  } else {
+    print('No hay ningún usuario conectado.');
+  }
+}
+
+
+
+
+
 
   void _mostrarSeleccionAmigos() {
     List<String> amigosSeleccionados = [];
@@ -377,15 +444,15 @@ class _SocialWidgetState extends State<SocialWidget> {
             },
           );
         } else {
-          _mostrarDialogoError('El usuario no tiene una imagen de perfil.');
+          _mostrarError('El usuario no tiene una imagen de perfil.');
         }
       } else {
-        _mostrarDialogoError('El usuario no existe.');
+        _mostrarError('El usuario no existe.');
       }
     });
   }
 
-  void _mostrarDialogoError(String mensaje) {
+  void _mostrarError(String mensaje) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -420,6 +487,7 @@ class _SocialWidgetState extends State<SocialWidget> {
     _obtenerUsuarioActual(); 
     _cargarAmigosUsuario(); 
     _cargarGrupos(); // Cargar grupos del usuario al iniciar la aplicación
+    _cargarSolicitudes(); // Cargar solicitudes de amistad del usuario
   }
 
   void _obtenerUsuarioActual() {
@@ -478,16 +546,13 @@ class _SocialWidgetState extends State<SocialWidget> {
   }
 }
 
-
-
-
-  void main() {
-    runApp(MaterialApp(
-      title: 'Social App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: SocialWidget(),
-    ));
-  }
+  void _cargarSolicitudes() {
+  FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes').get().then((QuerySnapshot querySnapshot) {
+    if (querySnapshot.docs.isNotEmpty) {
+      setState(() {
+        solicitudes = querySnapshot.docs.map((doc) => doc['from'] as String).toList();
+      });
+    }
+  });
+}
 }
