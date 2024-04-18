@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -19,7 +21,68 @@ class _BettingWidgetState extends State<BettingWidget> {
     'Liga BBVA': 'PD',
   };
   String? selectedLeague;
+  String? selectedMatch; // Variable para almacenar el partido seleccionado
   List<String> matches = [];
+  List<String> grupos = []; // Lista para almacenar los grupos del usuario
+  String? selectedGroup; // Variable para almacenar el grupo seleccionado
+  TextEditingController _nombreApuestaController = TextEditingController();
+  TextEditingController _equipo1Controller = TextEditingController();
+  TextEditingController _equipo2Controller = TextEditingController();
+  DateTime? _fechaSeleccionada;
+  Map<String, List<String>> leagueMatchesMap = {}; // Mapa para almacenar los partidos por liga
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserGroups();
+    _fetchMatchesForAllLeagues(); // Llama a la función para obtener los partidos de todas las ligas al iniciar el widget
+  }
+
+  Future<void> _fetchMatchesForAllLeagues() async {
+    for (String liga in ligas) {
+      await _fetchNextWeekLiveScores(leagueCodes[liga]!);
+    }
+  }
+
+  Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
+    final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
+    if (response.statusCode == 200) {
+      final dynamic data = json.decode(response.body);
+      setState(() {
+        List<String> leagueMatches = [];
+        for (var match in data['matches']) {
+          final homeTeamName = match['homeTeam']['name'];
+          final awayTeamName = match['awayTeam']['name'];
+          leagueMatches.add('$homeTeamName vs $awayTeamName');
+        }
+        leagueMatchesMap[leagueCode] = leagueMatches; // Guarda los partidos en el mapa utilizando el código de la liga como clave
+        // Seleccionar el primer partido si no hay ninguno seleccionado
+        if (selectedMatch == null && leagueMatches.isNotEmpty) {
+          selectedMatch = leagueMatches.first;
+        }
+      });
+    } else {
+      print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
+    }
+  }
+
+  Future<void> _fetchUserGroups() async {
+    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  
+    final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
+
+    if (response.exists) {
+      String usuarioActualName = response.data()?['user'];
+    
+      final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
+    
+      if (groupsResponse.docs.isNotEmpty) {
+        setState(() {
+          grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +95,9 @@ class _BettingWidgetState extends State<BettingWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Pantalla de Bombardeen segovia'),
-            SizedBox(height: 20), // Espacio entre el texto y el botón
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Mostrar la ventana emergente
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -52,17 +114,12 @@ class _BettingWidgetState extends State<BettingWidget> {
   }
 
   Widget _mostrarSeleccionAmigos(BuildContext context) {
-    List<String> amigosSeleccionados = [];
-    TextEditingController _nombreApuestaController = TextEditingController();
-    TextEditingController _equipo1Controller = TextEditingController();
-    TextEditingController _equipo2Controller = TextEditingController();
-    DateTime? _fechaSeleccionada; // Variable para almacenar la fecha seleccionada
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setState) {
         return AlertDialog(
           title: Text('Creación de Apuesta'),
           content: Container(
-            width: MediaQuery.of(context).size.width * 0.8, // Ancho del AlertDialog
+            width: MediaQuery.of(context).size.width * 0.8,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,7 +133,30 @@ class _BettingWidgetState extends State<BettingWidget> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20), // Espacio entre el campo de nombre de apuesta y el desplegable de ligas
+                  SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+                    value: selectedGroup,
+                    decoration: InputDecoration(
+                      labelText: 'Grupo',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    items: grupos.map((grupo) {
+                      return DropdownMenuItem<String>(
+                        value: grupo,
+                        child: Text(grupo),
+                      );
+                    }).toList(),
+                    onChanged: (String? selectedGroupValue) {
+                      setState(() {
+                        selectedGroup = selectedGroupValue;
+                        // Vaciar el campo de partido al cambiar de grupo
+                        selectedMatch = null;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 20),
                   DropdownButtonFormField<String>(
                     value: selectedLeague,
                     decoration: InputDecoration(
@@ -94,15 +174,21 @@ class _BettingWidgetState extends State<BettingWidget> {
                     onChanged: (String? selectedLeagueValue) {
                       setState(() {
                         selectedLeague = selectedLeagueValue;
-_fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? ''); 
+                        // Actualiza los partidos disponibles al cambiar de liga
+                        matches = leagueMatchesMap[leagueCodes[selectedLeagueValue ?? '']] ?? [];
+                        // Seleccionar el primer partido si hay partidos disponibles
+                        if (matches.isNotEmpty) {
+                          selectedMatch = matches.first;
+                        }
                       });
                     },
                   ),
                   if (selectedLeague != null && selectedLeague!.isNotEmpty)
                     Column(
                       children: [
-                        SizedBox(height: 20), // Espacio entre el desplegable de ligas y el desplegable de partidos
+                        SizedBox(height: 20),
                         DropdownButtonFormField<String>(
+                          value: selectedMatch,
                           decoration: InputDecoration(
                             labelText: 'Partidos',
                             border: OutlineInputBorder(
@@ -115,13 +201,15 @@ _fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? '');
                               child: Text(match),
                             );
                           }).toList(),
-                          onChanged: (String? selectedMatch) {
-                            // Aquí puedes agregar la lógica para manejar la selección del partido
+                          onChanged: (String? selectedMatchValue) {
+                            setState(() {
+                              selectedMatch = selectedMatchValue;
+                            });
                           },
                         ),
                       ],
                     ),
-                  SizedBox(height: 20), // Espacio entre los campos de entrada y el resto de campos
+                  SizedBox(height: 20),
                   TextFormField(
                     controller: _equipo1Controller,
                     decoration: InputDecoration(
@@ -172,27 +260,17 @@ _fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? '');
               },
               child: Text('Cancelar'),
             ),
-            // Aquí se puede agregar un botón adicional si se necesita
+            TextButton(
+              onPressed: () {
+                // Aquí puedes agregar la lógica para guardar la apuesta en la base de datos
+                // y asociarla con el grupo seleccionado
+                Navigator.of(context).pop();
+              },
+              child: Text('Aceptar'),
+            ),
           ],
         );
       },
     );
-  }
-
-  Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
-    final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
-    if (response.statusCode == 200) {
-      final dynamic data = json.decode(response.body);
-      setState(() {
-        matches.clear();
-        for (var match in data['matches']) {
-          final homeTeamName = match['homeTeam']['name'];
-          final awayTeamName = match['awayTeam']['name'];
-          matches.add('$homeTeamName vs $awayTeamName');
-        }
-      });
-    } else {
-      print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
-    }
   }
 }
