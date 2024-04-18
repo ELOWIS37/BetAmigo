@@ -21,6 +21,7 @@ class _BettingWidgetState extends State<BettingWidget> {
     'Liga BBVA': 'PD',
   };
   String? selectedLeague;
+  String? selectedMatch; // Variable para almacenar el partido seleccionado
   List<String> matches = [];
   List<String> grupos = []; // Lista para almacenar los grupos del usuario
   String? selectedGroup; // Variable para almacenar el grupo seleccionado
@@ -28,35 +29,60 @@ class _BettingWidgetState extends State<BettingWidget> {
   TextEditingController _equipo1Controller = TextEditingController();
   TextEditingController _equipo2Controller = TextEditingController();
   DateTime? _fechaSeleccionada;
+  Map<String, List<String>> leagueMatchesMap = {}; // Mapa para almacenar los partidos por liga
 
   @override
   void initState() {
     super.initState();
     _fetchUserGroups();
+    _fetchMatchesForAllLeagues(); // Llama a la función para obtener los partidos de todas las ligas al iniciar el widget
   }
 
-
-  Future<void> _fetchUserGroups() async {
-  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  
-  final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
-
-  if (response.exists) {
-    String usuarioActualName = response.data()?['user'];
-    
-    final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
-    
-    if (groupsResponse.docs.isNotEmpty) {
-      setState(() {
-        grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
-      });
+  Future<void> _fetchMatchesForAllLeagues() async {
+    for (String liga in ligas) {
+      await _fetchNextWeekLiveScores(leagueCodes[liga]!);
     }
   }
-}
 
+  Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
+    final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
+    if (response.statusCode == 200) {
+      final dynamic data = json.decode(response.body);
+      setState(() {
+        List<String> leagueMatches = [];
+        for (var match in data['matches']) {
+          final homeTeamName = match['homeTeam']['name'];
+          final awayTeamName = match['awayTeam']['name'];
+          leagueMatches.add('$homeTeamName vs $awayTeamName');
+        }
+        leagueMatchesMap[leagueCode] = leagueMatches; // Guarda los partidos en el mapa utilizando el código de la liga como clave
+        // Seleccionar el primer partido si no hay ninguno seleccionado
+        if (selectedMatch == null && leagueMatches.isNotEmpty) {
+          selectedMatch = leagueMatches.first;
+        }
+      });
+    } else {
+      print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
+    }
+  }
 
+  Future<void> _fetchUserGroups() async {
+    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  
+    final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
 
-
+    if (response.exists) {
+      String usuarioActualName = response.data()?['user'];
+    
+      final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
+    
+      if (groupsResponse.docs.isNotEmpty) {
+        setState(() {
+          grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +134,6 @@ class _BettingWidgetState extends State<BettingWidget> {
                     ),
                   ),
                   SizedBox(height: 20),
-                 
                   DropdownButtonFormField<String>(
                     value: selectedGroup,
                     decoration: InputDecoration(
@@ -126,6 +151,8 @@ class _BettingWidgetState extends State<BettingWidget> {
                     onChanged: (String? selectedGroupValue) {
                       setState(() {
                         selectedGroup = selectedGroupValue;
+                        // Vaciar el campo de partido al cambiar de grupo
+                        selectedMatch = null;
                       });
                     },
                   ),
@@ -147,7 +174,12 @@ class _BettingWidgetState extends State<BettingWidget> {
                     onChanged: (String? selectedLeagueValue) {
                       setState(() {
                         selectedLeague = selectedLeagueValue;
-                        _fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? ''); 
+                        // Actualiza los partidos disponibles al cambiar de liga
+                        matches = leagueMatchesMap[leagueCodes[selectedLeagueValue ?? '']] ?? [];
+                        // Seleccionar el primer partido si hay partidos disponibles
+                        if (matches.isNotEmpty) {
+                          selectedMatch = matches.first;
+                        }
                       });
                     },
                   ),
@@ -156,6 +188,7 @@ class _BettingWidgetState extends State<BettingWidget> {
                       children: [
                         SizedBox(height: 20),
                         DropdownButtonFormField<String>(
+                          value: selectedMatch,
                           decoration: InputDecoration(
                             labelText: 'Partidos',
                             border: OutlineInputBorder(
@@ -168,8 +201,10 @@ class _BettingWidgetState extends State<BettingWidget> {
                               child: Text(match),
                             );
                           }).toList(),
-                          onChanged: (String? selectedMatch) {
-                            // Aquí puedes agregar la lógica para manejar la selección del partido
+                          onChanged: (String? selectedMatchValue) {
+                            setState(() {
+                              selectedMatch = selectedMatchValue;
+                            });
                           },
                         ),
                       ],
@@ -237,24 +272,5 @@ class _BettingWidgetState extends State<BettingWidget> {
         );
       },
     );
-  }
- 
-
-
-  Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
-    final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
-    if (response.statusCode == 200) {
-      final dynamic data = json.decode(response.body);
-      setState(() {
-        matches.clear();
-        for (var match in data['matches']) {
-          final homeTeamName = match['homeTeam']['name'];
-          final awayTeamName = match['awayTeam']['name'];
-          matches.add('$homeTeamName vs $awayTeamName');
-        }
-      });
-    } else {
-      print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
-    }
   }
 }
