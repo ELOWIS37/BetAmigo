@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:betamigo/Widgets/TiendaWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,7 +16,7 @@ class MainScreen extends StatefulWidget {
   @override
   _MainScreenState createState() => _MainScreenState();
 }
-
+// PUEDE...DEJAR LA PAGINA PRINCIPAL MAS BONITA??? OOOOO YA SE YA SE, SBS CUANDO ENTRAS EN UNA LIGA, EN UN PARTIDO...QUE SALE EL CUADRO BLANCO? PUES QUE AHI PONGA LO DE LAS IMAGENES Y QUE LO DEJE GUAPO Y QUITE LO DEL SHEDULED NO DEL NULL - NULL...
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late String _profileImageId = '';
@@ -306,6 +307,13 @@ Stream<int> _betCoinsStream() {
               },
             ),
             ListTile(
+              title: Text('Tienda diaria'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => TiendaWidget()));
+              }
+            ),
+            ListTile(
               title: Text('Cerrar Sesión'),
               onTap: () {
                 _signOut(context);
@@ -473,7 +481,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                         width: 4,
                                       ),
                                       image: DecorationImage(
-                                        image: AssetImage('assets/imagenuser/$imageId.png'),
+                                        image: AssetImage('../assets/imageTeam/$imageId.png'),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
