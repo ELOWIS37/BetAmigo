@@ -49,23 +49,79 @@ class _SocialWidgetState extends State<SocialWidget> {
   //     solicitudes.removeWhere((solicitud) => solicitud == from);
   //   });
   // }
-  
+
+// void _aceptarSolicitud(String from) {
+//   String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+//   // Agregar al amigo a la lista de amigos del usuario actual
+//   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
+//     'amigos': FieldValue.arrayUnion([from])
+//   }).catchError((error) {
+//     print('Error al agregar el amigo: $error');
+//   });
+
+//   // Buscar al usuario por nombre y agregar al usuario actual a su lista de amigos
+//   FirebaseFirestore.instance.collection('users').where('user', isEqualTo: from).get().then((QuerySnapshot querySnapshot) {
+//     if (querySnapshot.docs.isNotEmpty) {
+//       String usuarioSolicitudId = querySnapshot.docs.first.id;
+
+//       FirebaseFirestore.instance.collection('users').doc(usuarioSolicitudId).update({
+//         'amigos': FieldValue.arrayUnion([usuarioActualId])
+//       }).catchError((error) {
+//         print('Error al agregar el amigo al usuario que envió la solicitud: $error');
+//       });
+//     } else {
+//       print('El usuario con nombre $from no existe.');
+//     }
+//   });
+
+//   // Eliminar la solicitud de amistad pendiente
+//   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
+//     .where('from', isEqualTo: from)
+//     .get()
+//     .then((QuerySnapshot querySnapshot) {
+//       querySnapshot.docs.forEach((doc) {
+//         doc.reference.delete();
+//       });
+//     });
+
+//   // Actualizar la lista de solicitudes en la interfaz
+//   setState(() {
+//     solicitudes.removeWhere((solicitud) => solicitud == from);
+//   });
+// }
+
 void _aceptarSolicitud(String from) {
   String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   // Agregar al amigo a la lista de amigos del usuario actual
   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
     'amigos': FieldValue.arrayUnion([from])
+  }).catchError((error) {
+    print('Error al agregar el amigo: $error');
   });
 
-  // Agregar al usuario actual a la lista de amigos del usuario que envió la solicitud
+  // Buscar al usuario por nombre y agregar al usuario actual a su lista de amigos
   FirebaseFirestore.instance.collection('users').where('user', isEqualTo: from).get().then((QuerySnapshot querySnapshot) {
     if (querySnapshot.docs.isNotEmpty) {
       String usuarioSolicitudId = querySnapshot.docs.first.id;
       
-      FirebaseFirestore.instance.collection('users').doc(usuarioSolicitudId).update({
-        'amigos': FieldValue.arrayUnion([usuarioActualId])
+      // Obtener el nombre del usuario actual
+      String nombreUsuarioActual;
+      FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get().then((DocumentSnapshot documentSnapshot) {
+        if (documentSnapshot.exists) {
+          nombreUsuarioActual = (documentSnapshot.data() as Map<String, dynamic>)['user'] ?? '';
+          
+          // Actualizar la lista de amigos del usuario que envió la solicitud con el nombre del usuario actual
+          FirebaseFirestore.instance.collection('users').doc(usuarioSolicitudId).update({
+            'amigos': FieldValue.arrayUnion([nombreUsuarioActual])
+          }).catchError((error) {
+            print('Error al agregar el amigo al usuario que envió la solicitud: $error');
+          });
+        }
       });
+    } else {
+      print('El usuario con nombre $from no existe.');
     }
   });
 
@@ -84,6 +140,11 @@ void _aceptarSolicitud(String from) {
     solicitudes.removeWhere((solicitud) => solicitud == from);
   });
 }
+
+
+
+
+
 
 
 
