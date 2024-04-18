@@ -9,6 +9,16 @@ import 'package:betamigo/Widgets/LeagueSelectionWidget.dart';
 import 'package:betamigo/Widgets/SocialWidget.dart';
 import 'package:betamigo/Widgets/BetCoinWidget.dart'; // Importa el widget BetCoinWidget
 
+void main() {
+  runApp(MaterialApp(
+    title: 'Bet Amigo',
+    theme: ThemeData(
+      primarySwatch: Colors.blue,
+    ),
+    home: MainScreen(),
+  ));
+}
+
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key});
 
@@ -68,8 +78,7 @@ class _MainScreenState extends State<MainScreen> {
     SocialWidget(),
     BettingWidget(),
   ];
-  
-  
+
   final ValueNotifier<String> _profileImageIdNotifier = ValueNotifier<String>('');
 
   @override
@@ -78,44 +87,40 @@ class _MainScreenState extends State<MainScreen> {
     _betCoinsNotifier = ValueNotifier<int>(_betCoins); // Inicializa el ValueNotifier con el valor actual de _betCoins
     _loadProfileImageId();
     _loadBetCoins(); // Carga los BetCoins al inicializar la pantalla
-   
   }
 
   Future<void> _loadProfileImageId() async {
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    DocumentSnapshot<Map<String, dynamic>> userData =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    String profileImageId = userData.get('profileImageid');
-    _profileImageIdNotifier.value = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot<Map<String, dynamic>> userData =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      String profileImageId = userData.get('profileImageid');
+      _profileImageIdNotifier.value = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
+    }
   }
-}
 
-Future<void> _loadBetCoins() async {
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    DocumentSnapshot<Map<String, dynamic>> userData =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    int betCoins = userData.get('betCoins');
-    setState(() {
-      _betCoins = betCoins;
-      _betCoinsNotifier.value = betCoins; // Actualiza el ValueNotifier
-    });
+  Future<void> _loadBetCoins() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot<Map<String, dynamic>> userData =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      int betCoins = userData.get('betCoins');
+      setState(() {
+        _betCoins = betCoins;
+        _betCoinsNotifier.value = betCoins; // Actualiza el ValueNotifier
+      });
+    }
   }
-}
 
-Stream<int> _betCoinsStream() {
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    return FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().map((snapshot) {
-      return snapshot.data()?['betCoins'] ?? 0;
-    });
+  Stream<int> _betCoinsStream() {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      return FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().map((snapshot) {
+        return snapshot.data()?['betCoins'] ?? 0;
+      });
+    }
+    return Stream.value(0);
   }
-  return Stream.value(0);
-}
-
-
-
 
   void _onItemTapped(int index) {
     setState(() {
@@ -126,7 +131,6 @@ Stream<int> _betCoinsStream() {
   @override
   Widget build(BuildContext context) {
     bool isSmallScreen = MediaQuery.of(context).size.width < 600;
-    // ------------------- 
 
     return Scaffold(
       appBar: AppBar(
@@ -175,80 +179,52 @@ Stream<int> _betCoinsStream() {
             ),
           ],
         ),
-        // actions: [
-        //   Row(
-        //     children: [
-        //       Text('BetCoins: $_betCoins'), // Muestra el número de BetCoins
-        //       PopupMenuButton(
-        //         itemBuilder: (BuildContext context) {
-        //           return [
-        //             PopupMenuItem(
-        //               child: ListTile(
-        //                 title: Text('Perfil'),
-        //                 onTap: () {
-        //                   Navigator.pop(context);
-        //                   _showProfileDialog(context);
-        //                 },
-        //               ),
-        //             ),
-        //             PopupMenuItem(
-        //               child: ListTile(
-        //                 title: Text('Cerrar Sesión'),
-        //                 onTap: () {
-        //                   Navigator.pop(context);
-        //                   _signOut(context);
-        //                 },
-        //               ),
-        //             ),
-        //           ];
-        //         },
-        //       ),
-        //     ],
-        //   ),
-        // ],
-        // ------------------- ACTION -------------------
-       actions: [
-  Row(
-    children: [
-      StreamBuilder<int>(
-        stream: _betCoinsStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return CircularProgressIndicator();
-          }
-          int betCoins = snapshot.data ?? 0;
-          return Text('BetCoins: $betCoins');
-        },
-      ),
-      PopupMenuButton(
-        itemBuilder: (BuildContext context) {
-          return [
-            PopupMenuItem(
-              child: ListTile(
-                title: Text('Perfil'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showProfileDialog(context);
+        actions: [
+          Row(
+            children: [
+              StreamBuilder<int>(
+                stream: _betCoinsStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  }
+                  int betCoins = snapshot.data ?? 0;
+                  return Row(
+                    children: [
+                      Image.asset('assets/coin.png', width: 20, height: 20), // Aquí carga la imagen de la moneda
+                      SizedBox(width: 4), // Espacio entre la imagen y el número
+                      Text('$betCoins'), // Muestra el número de BetCoins
+                    ],
+                  );
                 },
               ),
-            ),
-            PopupMenuItem(
-              child: ListTile(
-                title: Text('Cerrar Sesión'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _signOut(context);
+              PopupMenuButton(
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem(
+                      child: ListTile(
+                        title: Text('Perfil'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showProfileDialog(context);
+                        },
+                      ),
+                    ),
+                    PopupMenuItem(
+                      child: ListTile(
+                        title: Text('Cerrar Sesión'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _signOut(context);
+                        },
+                      ),
+                    ),
+                  ];
                 },
               ),
-            ),
-          ];
-        },
-      ),
-    ],
-  ),
-],
-
-
+            ],
+          ),
+        ],
       ),
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
@@ -272,14 +248,6 @@ Stream<int> _betCoinsStream() {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // GestureDetector(
-                  //   onTap: () => _showProfileDialog(context),
-                
-                  //   child: CircleAvatar(
-                  //     radius: 40,
-                  //     backgroundImage: _profileImageIdNotifier.value.isNotEmpty ? AssetImage(_profileImageIdNotifier.value) : null,
-                  //   ),
-                  // ),
                   ValueListenableBuilder<String>(
                     valueListenable: _profileImageIdNotifier,
                     builder: (context, profileImageId, child) {
@@ -292,9 +260,6 @@ Stream<int> _betCoinsStream() {
                       );
                     },
                   )
-
-
-
                 ],
               ),
             ),
@@ -317,8 +282,7 @@ Stream<int> _betCoinsStream() {
     );
   }
 
-
-Future<void> _showProfileDialog(BuildContext context) async {
+  Future<void> _showProfileDialog(BuildContext context) async {
   User? user = FirebaseAuth.instance.currentUser;
   if (user != null) {
     DocumentSnapshot<Map<String, dynamic>> userData =
@@ -326,6 +290,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
     String username = userData.get('user');
     String email = userData.get('email');
     String profileImageId = userData.get('profileImageid'); // Obtener la URL de la imagen de perfil
+    int betCoins = userData.get('betCoins'); // Obtener el número de BetCoins
 
     showDialog(
       context: context,
@@ -340,7 +305,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Contenido del perfil (nombre de usuario, email, imagen de perfil)
+                  // Contenido del perfil (nombre de usuario, email, imagen de perfil, y BetCoins)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -375,6 +340,24 @@ Future<void> _showProfileDialog(BuildContext context) async {
                           Text(
                             email,
                             style: TextStyle(fontSize: 16),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Image.asset('assets/coin.png', width: 24, height: 24), // Icono de BetCoins
+                              SizedBox(width: 8),
+                              const Text(
+                                'BetCoins: ',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                '$betCoins', // Mostrar el número de BetCoins
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -511,8 +494,6 @@ Future<void> _showProfileDialog(BuildContext context) async {
 }
 
 
-
-
   Future<void> _signOut(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
@@ -522,59 +503,22 @@ Future<void> _showProfileDialog(BuildContext context) async {
     }
   }
 
-  // Este método guarda la ruta local de la imagen seleccionada en Firestore
-// Future<void> _pickAndSetImage(String imageId) async {
-//   User? user = FirebaseAuth.instance.currentUser;
-//   if (user != null) {
-//     try {
-//       String imagePath = 'assets/imagenuser/$imageId.png';
+  Future<void> _pickAndSetImage(String imageId) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        String imagePath = 'assets/imagenuser/$imageId.png';
+        DocumentSnapshot<Map<String, dynamic>> userData =
+            await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        Map<String, dynamic> updatedUserData = userData.data() ?? {};
+        updatedUserData['profileImageid'] = imagePath;
 
-//       // Obtenemos los datos actuales del usuario
-//       DocumentSnapshot<Map<String, dynamic>> userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-//       // Copiamos todos los datos actuales del usuario
-//       Map<String, dynamic> updatedUserData = userData.data() ?? {};
-//       // Actualizamos el campo profileImageid
-//       updatedUserData['profileImageid'] = imagePath;
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
 
-//       // Actualizamos solo el campo profileImageid en Firestore
-//       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
-
-//       setState(() {
-//         _profileImageId = imagePath; // Actualiza la URL de la imagen de perfil en el estado local
-//       });
-//     } catch (e) {
-//       print('Error setting image: $e');
-//     }
-//   }
-// }
-Future<void> _pickAndSetImage(String imageId) async {
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    try {
-      String imagePath = 'assets/imagenuser/$imageId.png';
-      DocumentSnapshot<Map<String, dynamic>> userData =
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      Map<String, dynamic> updatedUserData = userData.data() ?? {};
-      updatedUserData['profileImageid'] = imagePath;
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
-
-      _profileImageIdNotifier.value = imagePath; // Notifica el cambio a ValueNotifier
-    } catch (e) {
-      print('Error setting image: $e');
+        _profileImageIdNotifier.value = imagePath; // Notifica el cambio a ValueNotifier
+      } catch (e) {
+        print('Error setting image: $e');
+      }
     }
   }
-}
-
-
-
-void main() {
-  runApp(MaterialApp(
-    title: 'Bet Amigo',
-    theme: ThemeData(
-      primarySwatch: Colors.blue,
-    ),
-    home: MainScreen(),
-  ));
-}
 }
