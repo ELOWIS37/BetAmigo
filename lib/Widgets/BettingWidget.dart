@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,6 +22,41 @@ class _BettingWidgetState extends State<BettingWidget> {
   };
   String? selectedLeague;
   List<String> matches = [];
+  List<String> grupos = []; // Lista para almacenar los grupos del usuario
+  String? selectedGroup; // Variable para almacenar el grupo seleccionado
+  TextEditingController _nombreApuestaController = TextEditingController();
+  TextEditingController _equipo1Controller = TextEditingController();
+  TextEditingController _equipo2Controller = TextEditingController();
+  DateTime? _fechaSeleccionada;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserGroups();
+  }
+
+
+  Future<void> _fetchUserGroups() async {
+  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  
+  final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
+
+  if (response.exists) {
+    String usuarioActualName = response.data()?['user'];
+    
+    final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
+    
+    if (groupsResponse.docs.isNotEmpty) {
+      setState(() {
+        grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
+      });
+    }
+  }
+}
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +69,9 @@ class _BettingWidgetState extends State<BettingWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Pantalla de Bombardeen segovia'),
-            SizedBox(height: 20), // Espacio entre el texto y el botón
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Mostrar la ventana emergente
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
@@ -52,17 +88,12 @@ class _BettingWidgetState extends State<BettingWidget> {
   }
 
   Widget _mostrarSeleccionAmigos(BuildContext context) {
-    List<String> amigosSeleccionados = [];
-    TextEditingController _nombreApuestaController = TextEditingController();
-    TextEditingController _equipo1Controller = TextEditingController();
-    TextEditingController _equipo2Controller = TextEditingController();
-    DateTime? _fechaSeleccionada; // Variable para almacenar la fecha seleccionada
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setState) {
         return AlertDialog(
           title: Text('Creación de Apuesta'),
           content: Container(
-            width: MediaQuery.of(context).size.width * 0.8, // Ancho del AlertDialog
+            width: MediaQuery.of(context).size.width * 0.8,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,7 +107,33 @@ class _BettingWidgetState extends State<BettingWidget> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20), // Espacio entre el campo de nombre de apuesta y el desplegable de ligas
+                  SizedBox(height: 20),
+                   Column(
+                    children: [
+                      Text('Grupos obtenidos: $grupos'),  // Esta línea mostrará los grupos en formato de lista
+                    ],
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: selectedGroup,
+                    decoration: InputDecoration(
+                      labelText: 'Grupo',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    items: grupos.map((grupo) {
+                      return DropdownMenuItem<String>(
+                        value: grupo,
+                        child: Text(grupo),
+                      );
+                    }).toList(),
+                    onChanged: (String? selectedGroupValue) {
+                      setState(() {
+                        selectedGroup = selectedGroupValue;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 20),
                   DropdownButtonFormField<String>(
                     value: selectedLeague,
                     decoration: InputDecoration(
@@ -94,14 +151,14 @@ class _BettingWidgetState extends State<BettingWidget> {
                     onChanged: (String? selectedLeagueValue) {
                       setState(() {
                         selectedLeague = selectedLeagueValue;
-_fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? ''); 
+                        _fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? ''); 
                       });
                     },
                   ),
                   if (selectedLeague != null && selectedLeague!.isNotEmpty)
                     Column(
                       children: [
-                        SizedBox(height: 20), // Espacio entre el desplegable de ligas y el desplegable de partidos
+                        SizedBox(height: 20),
                         DropdownButtonFormField<String>(
                           decoration: InputDecoration(
                             labelText: 'Partidos',
@@ -121,7 +178,7 @@ _fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? '');
                         ),
                       ],
                     ),
-                  SizedBox(height: 20), // Espacio entre los campos de entrada y el resto de campos
+                  SizedBox(height: 20),
                   TextFormField(
                     controller: _equipo1Controller,
                     decoration: InputDecoration(
@@ -172,12 +229,21 @@ _fetchNextWeekLiveScores(leagueCodes[selectedLeagueValue ?? ''] ?? '');
               },
               child: Text('Cancelar'),
             ),
-            // Aquí se puede agregar un botón adicional si se necesita
+            TextButton(
+              onPressed: () {
+                // Aquí puedes agregar la lógica para guardar la apuesta en la base de datos
+                // y asociarla con el grupo seleccionado
+                Navigator.of(context).pop();
+              },
+              child: Text('Aceptar'),
+            ),
           ],
         );
       },
     );
   }
+ 
+
 
   Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
     final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
