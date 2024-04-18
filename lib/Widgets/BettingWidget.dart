@@ -108,11 +108,7 @@ class _BettingWidgetState extends State<BettingWidget> {
                     ),
                   ),
                   SizedBox(height: 20),
-                   Column(
-                    children: [
-                      Text('Grupos obtenidos: $grupos'),  // Esta línea mostrará los grupos en formato de lista
-                    ],
-                  ),
+                 
                   DropdownButtonFormField<String>(
                     value: selectedGroup,
                     decoration: InputDecoration(
