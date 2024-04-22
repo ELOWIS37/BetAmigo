@@ -464,7 +464,7 @@ class _MainScreenState extends State<MainScreen> {
                                         width: 4,
                                       ),
                                       image: DecorationImage(
-                                        image: AssetImage('../assets/imageTeam/$imageId.png'),
+                                        image: AssetImage('assets/imageTeam/$imageId.png'),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
