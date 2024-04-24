@@ -9,7 +9,7 @@ class AuthenticationWrapper extends StatelessWidget {
     final User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      return MainScreen();
+      return const MainScreen();
     } else {
       return SignInScreen();
     }

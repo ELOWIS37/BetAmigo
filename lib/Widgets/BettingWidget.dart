@@ -24,9 +24,9 @@ class _BettingWidgetState extends State<BettingWidget> {
   List<String> matches = [];
   List<String> grupos = []; // Lista para almacenar los grupos del usuario
   String? selectedGroup; // Variable para almacenar el grupo seleccionado
-  TextEditingController _nombreApuestaController = TextEditingController();
-  TextEditingController _equipo1Controller = TextEditingController();
-  TextEditingController _equipo2Controller = TextEditingController();
+  final TextEditingController _nombreApuestaController = TextEditingController();
+  final TextEditingController _equipo1Controller = TextEditingController();
+  final TextEditingController _equipo2Controller = TextEditingController();
   DateTime? _fechaSeleccionada;
 
   @override

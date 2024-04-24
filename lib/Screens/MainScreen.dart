@@ -175,38 +175,7 @@ Stream<int> _betCoinsStream() {
             ),
           ],
         ),
-        // actions: [
-        //   Row(
-        //     children: [
-        //       Text('BetCoins: $_betCoins'), // Muestra el número de BetCoins
-        //       PopupMenuButton(
-        //         itemBuilder: (BuildContext context) {
-        //           return [
-        //             PopupMenuItem(
-        //               child: ListTile(
-        //                 title: Text('Perfil'),
-        //                 onTap: () {
-        //                   Navigator.pop(context);
-        //                   _showProfileDialog(context);
-        //                 },
-        //               ),
-        //             ),
-        //             PopupMenuItem(
-        //               child: ListTile(
-        //                 title: Text('Cerrar Sesión'),
-        //                 onTap: () {
-        //                   Navigator.pop(context);
-        //                   _signOut(context);
-        //                 },
-        //               ),
-        //             ),
-        //           ];
-        //         },
-        //       ),
-        //     ],
-        //   ),
-        // ],
-        // ------------------- ACTION -------------------
+       
        actions: [
   Row(
     children: [
