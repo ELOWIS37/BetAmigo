@@ -353,28 +353,53 @@ Future<void> _fetchGroupBets(String groupName) async {
     );
   }
 
-  void _crearNuevaApuesta() {
-    if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
-      FirebaseFirestore.instance.collection('apuestas').add({
-        'bote': 0,
-        'equipo_local': selectedMatch!.split(' vs ')[0],
-        'equipo_visitante': selectedMatch!.split(' vs ')[1],
-        'nombre': _nombreApuestaController.text,
-        'grupo': selectedGroup,
-      }).then((value) {
+ void _crearNuevaApuesta() async {
+  if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
+    try {
+      // Buscar el documento del grupo seleccionado
+      final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
+
+      if (groupSnapshot.docs.isNotEmpty) {
+        // Obtener el documento del grupo
+        final groupDoc = groupSnapshot.docs.first;
+
+        // Obtener los usuarios del grupo
+        final List<dynamic> members = groupDoc.data()['miembros'];
+
+        // Mostrar los usuarios del grupo por consola
+        print('Usuarios del grupo $selectedGroup:');
+        members.forEach((member) {
+          print(member);
+        });
+
+        // Crear la nueva apuesta
+        final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
+          'bote': 0,
+          'equipo_local': selectedMatch!.split(' vs ')[0],
+          'equipo_visitante': selectedMatch!.split(' vs ')[1],
+          'nombre': _nombreApuestaController.text,
+          'grupo': selectedGroup,
+          'usuarios': members, // Guardar los usuarios del grupo
+        });
+
         setState(() {
           final nuevaApuesta =
               '${_nombreApuestaController.text} - Grupo: $selectedGroup - Liga: $selectedLeague - Partido: $selectedMatch';
           apuestas.add(nuevaApuesta);
         });
+
         // Mostrar mensaje de éxito o realizar otras acciones si es necesario
         print('Apuesta creada exitosamente');
-      }).catchError((error) {
-        // Manejar errores si la creación de la apuesta falla
-        print('Error al crear la apuesta: $error');
-      });
+      } else {
+        print('No se encontró el grupo $selectedGroup en la base de datos');
+      }
+    } catch (error) {
+      // Manejar errores si la creación de la apuesta falla
+      print('Error al crear la apuesta: $error');
     }
   }
+}
+
 }
 
 class AnimatedApuesta extends StatefulWidget {
