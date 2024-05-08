@@ -236,38 +236,39 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
 
   // Función para registrar un nuevo usuario
   Future<void> _register(BuildContext context) async {
-    try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text,
-        password: passwordController.text,
-      );
+      try {
+        UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text,
+          password: passwordController.text,
+        );
 
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
-        'user': userController.text,
-        'email': emailController.text,
-        'id': userCredential.user!.uid,
-        'profileImageid': 'assets/imagenuser/usuario7.png',
-      });
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'user': userController.text,
+          'email': emailController.text,
+          'id': userCredential.user!.uid,
+          'profileImageid': 'assets/imagenuser/usuario7.png',
+          'betCoins': 50, // Establecer el valor inicial de betCoins en 50
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Usuario registrado correctamente!'),
-      ));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('¡Usuario registrado correctamente! Recompensa de bienvenida: 50 BetCoins'),
+        ));
 
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text,
-        password: passwordController.text,
-      );
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: emailController.text,
+          password: passwordController.text,
+        );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MainScreen()),
-      );
-    } catch (e) {
-      print('Error al registrar el usuario: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error al registrar el usuario: $e'),
-      ));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+        );
+      } catch (e) {
+        print('Error al registrar el usuario: $e');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error al registrar el usuario: $e'),
+        ));
+      }
     }
-  }
 }
