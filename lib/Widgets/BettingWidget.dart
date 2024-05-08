@@ -21,13 +21,13 @@ class _BettingWidgetState extends State<BettingWidget> {
     'Liga BBVA': 'PD',
   };
   String? selectedLeague;
-  String? selectedMatch; // Variable para almacenar el partido seleccionado
+  String? selectedMatch; 
   List<String> matches = [];
-  List<String> grupos = []; // Lista para almacenar los grupos del usuario
-  String? selectedGroup; // Variable para almacenar el grupo seleccionado
+  List<String> grupos = [];
+  String? selectedGroup;
   TextEditingController _nombreApuestaController = TextEditingController();
   DateTime? _fechaSeleccionada;
-  Map<String, List<String>> leagueMatchesMap = {}; // Mapa para almacenar los partidos por liga
+  Map<String, List<String>> leagueMatchesMap = {};
   int apuestaMinima = 10;
   int apuestaMaxima = 200;
   List<String> apuestas = [];
@@ -36,7 +36,7 @@ class _BettingWidgetState extends State<BettingWidget> {
   void initState() {
     super.initState();
     _fetchUserGroups();
-    _fetchMatchesForAllLeagues(); // Llama a la función para obtener los partidos de todas las ligas al iniciar el widget
+    _fetchMatchesForAllLeagues(); 
   }
 
   Future<void> _fetchMatchesForAllLeagues() async {
@@ -45,53 +45,61 @@ class _BettingWidgetState extends State<BettingWidget> {
     }
   }
 
-  Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
-    final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
-    if (response.statusCode == 200) {
-      final dynamic data = json.decode(response.body);
-      setState(() {
-        List<String> leagueMatches = [];
-        for (var match in data['matches']) {
-          final homeTeamName = match['homeTeam']['name'];
-          final awayTeamName = match['awayTeam']['name'];
-          final matchTime = DateFormat('HH:mm').format(DateTime.parse(match['utcDate']));
-          leagueMatches.add('$homeTeamName vs $awayTeamName - $matchTime');
-        }
-        leagueMatchesMap[leagueCode] = leagueMatches; // Guarda los partidos en el mapa utilizando el código de la liga como clave
-        // Seleccionar el primer partido si no hay ninguno seleccionado
-        if (selectedMatch == null && leagueMatches.isNotEmpty) {
-          selectedMatch = leagueMatches.first;
-        }
-      });
-    } else {
-      print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
-    }
-  }
-
-  Future<void> _fetchUserGroups() async {
-    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  
-    final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
-
-    if (response.exists) {
-      String usuarioActualName = response.data()?['user'];
-    
-      final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
-    
-      if (groupsResponse.docs.isNotEmpty) {
-        setState(() {
-          grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
-        });
+Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
+  final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
+  if (response.statusCode == 200) {
+    final dynamic data = json.decode(response.body);
+    setState(() {
+      List<String> leagueMatches = [];
+      for (var match in data['matches']) {
+        final homeTeamName = match['homeTeam']['name'];
+        final awayTeamName = match['awayTeam']['name'];
+        leagueMatches.add('$homeTeamName vs $awayTeamName');
       }
+      leagueMatchesMap[leagueCode] = leagueMatches;
+      if (selectedMatch == null && leagueMatches.isNotEmpty) {
+        selectedMatch = leagueMatches.first;
+      }
+    });
+  } else {
+    print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
+  }
+}
+
+
+Future<void> _fetchUserGroups() async {
+  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
+
+  if (response.exists) {
+    String usuarioActualName = response.data()?['user'];
+    final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
+
+    if (groupsResponse.docs.isNotEmpty) {
+      setState(() {
+        grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
+        // Si el usuario está dentro de algún grupo, carga las apuestas del primer grupo
+        selectedGroup = grupos.first;
+        _fetchGroupBets(selectedGroup!);
+      });
     }
   }
+}
+Future<void> _fetchGroupBets(String groupName) async {
+  final groupBetsSnapshot = await FirebaseFirestore.instance.collection('apuestas').where('grupo', isEqualTo: groupName).get();
+  setState(() {
+    apuestas = groupBetsSnapshot.docs.map((doc) => doc.data()['nombre'] as String).toList();
+  });
+}
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Apuestas Virtuales'),
-        backgroundColor: Colors.indigo, // Cambiar el color de la barra de navegación
+        backgroundColor: Colors.indigo, 
       ),
       body: Padding(
         padding: EdgeInsets.all(20),
@@ -100,7 +108,7 @@ class _BettingWidgetState extends State<BettingWidget> {
           children: [
             Text(
               '¡Crea tu Apuesta!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo), // Cambiar el color del texto
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo), 
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 20),
@@ -115,7 +123,7 @@ class _BettingWidgetState extends State<BettingWidget> {
               },
               child: Text('Crear Apuesta', style: TextStyle(fontSize: 18)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo, // Cambiar el color del botón
+                backgroundColor: Colors.indigo, 
                 padding: EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -125,7 +133,7 @@ class _BettingWidgetState extends State<BettingWidget> {
             SizedBox(height: 20),
             Text(
               'Apuestas Recientes',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo), // Cambiar el color del texto
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo), 
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 10),
@@ -214,9 +222,7 @@ class _BettingWidgetState extends State<BettingWidget> {
                     onChanged: (String? selectedLeagueValue) {
                       setState(() {
                         selectedLeague = selectedLeagueValue;
-                        // Actualiza los partidos disponibles al cambiar de liga
                         matches = leagueMatchesMap[leagueCodes[selectedLeagueValue ?? '']] ?? [];
-                        // Seleccionar el primer partido si hay partidos disponibles
                         if (matches.isNotEmpty) {
                           selectedMatch = matches.first;
                         }
@@ -333,7 +339,6 @@ class _BettingWidgetState extends State<BettingWidget> {
         ),
         ElevatedButton(
           onPressed: () {
-            // Implementar lógica para procesar la apuesta
             Navigator.of(context).pop();
           },
           child: Text('Apostar', style: TextStyle(fontSize: 16)),
@@ -350,10 +355,23 @@ class _BettingWidgetState extends State<BettingWidget> {
 
   void _crearNuevaApuesta() {
     if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
-      setState(() {
-        final nuevaApuesta =
-            '${_nombreApuestaController.text} - Grupo: $selectedGroup - Liga: $selectedLeague - Partido: $selectedMatch';
-        apuestas.add(nuevaApuesta);
+      FirebaseFirestore.instance.collection('apuestas').add({
+        'bote': 0,
+        'equipo_local': selectedMatch!.split(' vs ')[0],
+        'equipo_visitante': selectedMatch!.split(' vs ')[1],
+        'nombre': _nombreApuestaController.text,
+        'grupo': selectedGroup,
+      }).then((value) {
+        setState(() {
+          final nuevaApuesta =
+              '${_nombreApuestaController.text} - Grupo: $selectedGroup - Liga: $selectedLeague - Partido: $selectedMatch';
+          apuestas.add(nuevaApuesta);
+        });
+        // Mostrar mensaje de éxito o realizar otras acciones si es necesario
+        print('Apuesta creada exitosamente');
+      }).catchError((error) {
+        // Manejar errores si la creación de la apuesta falla
+        print('Error al crear la apuesta: $error');
       });
     }
   }
@@ -414,59 +432,10 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
           padding: EdgeInsets.all(10),
           child: Text(
             widget.nombreApuesta,
-            style: TextStyle(fontSize: 16, color: Colors.indigo), // Cambiar el color del texto
+            style: TextStyle(fontSize: 16, color: Colors.indigo),
           ),
         ),
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: BettingWidget(),
-    theme: ThemeData(
-      primaryColor: Colors.indigo, // Cambiar el color principal
-      hintColor: Colors.indigoAccent, // Cambiar el color de las sugerencias
-      textTheme: TextTheme(
-        bodyText1: TextStyle(color: Colors.indigo), // Cambiar el color del texto del cuerpo
-        bodyText2: TextStyle(color: Colors.indigo), // Cambiar el color del texto del cuerpo
-        button: TextStyle(color: Colors.white), // Cambiar el color del texto de los botones
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: Colors.indigo, // Cambiar el color de fondo de los botones elevados
-          elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.indigo, width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.indigoAccent, width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red, width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red, width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        labelStyle: TextStyle(color: Colors.indigo), // Cambiar el color de la etiqueta
-      ),
-      dialogTheme: DialogTheme(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    ),
-  ));
 }
