@@ -29,85 +29,78 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          FutureBuilder<String>(
-            future: _chatIdFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return CircularProgressIndicator();
-              } else {
-                if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else {
-                  return Text('Chat ID: ${snapshot.data}');
-                }
-              }
-            },
-          ),
           Expanded(
             child: FutureBuilder<String>(
               future: _chatIdFuture,
-              builder: (context, chatIdSnapshot) {
-                if (chatIdSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
                     child: CircularProgressIndicator(),
                   );
-                }
+                } else {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error: ${snapshot.error}'),
+                    );
+                  } else {
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('chats')
+                          .doc(snapshot.data)
+                          .collection('mensajes')
+                          .orderBy('timestamp', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('chats')
-                      .doc(chatIdSnapshot.data)
-                      .collection('mensajes')
-                      .orderBy('timestamp', descending: true)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
+                        return ListView.builder(
+                          reverse: true,
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (context, index) {
+                            var mensaje = snapshot.data!.docs[index];
+                            bool esMensajePropio =
+                                mensaje['remitente'] == FirebaseAuth.instance.currentUser?.uid;
 
-                    return ListView.builder(
-                      reverse: true,
-                      itemCount: snapshot.data!.docs.length,
-                      itemBuilder: (context, index) {
-                        var mensaje = snapshot.data!.docs[index];
-                        bool esMensajePropio =
-                            mensaje['remitente'] == FirebaseAuth.instance.currentUser?.uid;
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                          child: Align(
-                            alignment: esMensajePropio ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-                              decoration: BoxDecoration(
-                                color: esMensajePropio ? Colors.blue : Colors.grey[300],
-                                borderRadius: esMensajePropio
-                                    ? const BorderRadius.only(
-                                        topLeft: Radius.circular(20.0),
-                                        bottomLeft: Radius.circular(20.0),
-                                        bottomRight: Radius.circular(20.0),
-                                      )
-                                    : const BorderRadius.only(
-                                        topRight: Radius.circular(20.0),
-                                        bottomLeft: Radius.circular(20.0),
-                                        bottomRight: Radius.circular(20.0),
-                                      ),
-                              ),
-                              child: Text(
-                                mensaje['texto'],
-                                style: TextStyle(
-                                  color: esMensajePropio ? Colors.white : Colors.black,
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                              child: Align(
+                                alignment: esMensajePropio ? Alignment.centerRight : Alignment.centerLeft,
+                                child: Container(
+                                  padding: const EdgeInsets.all(12.0),
+                                  decoration: BoxDecoration(
+                                    color: esMensajePropio ? Colors.blue : Colors.grey[300],
+                                    borderRadius: esMensajePropio
+                                        ? const BorderRadius.only(
+                                            topLeft: Radius.circular(20.0),
+                                            bottomLeft: Radius.circular(20.0),
+                                            bottomRight: Radius.circular(20.0),
+                                          )
+                                        : const BorderRadius.only(
+                                            topRight: Radius.circular(20.0),
+                                            bottomLeft: Radius.circular(20.0),
+                                            bottomRight: Radius.circular(20.0),
+                                          ),
+                                  ),
+                                  child: Text(
+                                    mensaje['texto'],
+                                    style: TextStyle(
+                                      color: esMensajePropio ? Colors.white : Colors.black,
+                                      fontSize: 16.0,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         );
                       },
                     );
-                  },
-                );
+                  }
+                }
               },
             ),
           ),
@@ -120,9 +113,13 @@ class _ChatScreenState extends State<ChatScreen> {
                     controller: _mensajeController,
                     decoration: InputDecoration(
                       hintText: 'Escribe un mensaje...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
                     ),
                   ),
                 ),
+                SizedBox(width: 8.0),
                 IconButton(
                   icon: Icon(Icons.send),
                   onPressed: () {
