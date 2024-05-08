@@ -13,6 +13,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _mensajeController = TextEditingController();
+  late Future<String> _chatIdFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatIdFuture = _chatId();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,56 +29,82 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
+          FutureBuilder<String>(
+            future: _chatIdFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator();
+              } else {
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else {
+                  return Text('Chat ID: ${snapshot.data}');
+                }
+              }
+            },
+          ),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('chats')
-                  .doc(_chatId())
-                  .collection('mensajes')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+            child: FutureBuilder<String>(
+              future: _chatIdFuture,
+              builder: (context, chatIdSnapshot) {
+                if (chatIdSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                     child: CircularProgressIndicator(),
                   );
                 }
 
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    var mensaje = snapshot.data!.docs[index];
-                    bool esMensajePropio = mensaje['remitente'] == FirebaseAuth.instance.currentUser?.uid;
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('chats')
+                      .doc(chatIdSnapshot.data)
+                      .collection('mensajes')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                      child: Align(
-                        alignment: esMensajePropio ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
-                          decoration: BoxDecoration(
-                            color: esMensajePropio ? Colors.blue : Colors.grey[300],
-                            borderRadius: esMensajePropio
-                                ? const BorderRadius.only(
-                                    topLeft: Radius.circular(20.0),
-                                    bottomLeft: Radius.circular(20.0),
-                                    bottomRight: Radius.circular(20.0),
-                                  )
-                                : const BorderRadius.only(
-                                    topRight: Radius.circular(20.0),
-                                    bottomLeft: Radius.circular(20.0),
-                                    bottomRight: Radius.circular(20.0),
-                                  ),
-                          ),
-                          child: Text(
-                            mensaje['texto'],
-                            style: TextStyle(
-                              color: esMensajePropio ? Colors.white : Colors.black,
+                    return ListView.builder(
+                      reverse: true,
+                      itemCount: snapshot.data!.docs.length,
+                      itemBuilder: (context, index) {
+                        var mensaje = snapshot.data!.docs[index];
+                        bool esMensajePropio =
+                            mensaje['remitente'] == FirebaseAuth.instance.currentUser?.uid;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                          child: Align(
+                            alignment: esMensajePropio ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                              decoration: BoxDecoration(
+                                color: esMensajePropio ? Colors.blue : Colors.grey[300],
+                                borderRadius: esMensajePropio
+                                    ? const BorderRadius.only(
+                                        topLeft: Radius.circular(20.0),
+                                        bottomLeft: Radius.circular(20.0),
+                                        bottomRight: Radius.circular(20.0),
+                                      )
+                                    : const BorderRadius.only(
+                                        topRight: Radius.circular(20.0),
+                                        bottomLeft: Radius.circular(20.0),
+                                        bottomRight: Radius.circular(20.0),
+                                      ),
+                              ),
+                              child: Text(
+                                mensaje['texto'],
+                                style: TextStyle(
+                                  color: esMensajePropio ? Colors.white : Colors.black,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 );
@@ -104,112 +137,107 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  String _chatId() {
-    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    String amigoId = widget.amigo;
+  void _enviarMensaje() async {
+    if (_mensajeController.text.isNotEmpty) {
+      String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      String amigoNombre = widget.amigo;
 
-    List<String> ids = [usuarioActualId, amigoId]..sort();
+      final amigoSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('user', isEqualTo: amigoNombre)
+          .get();
+
+      if (amigoSnapshot.docs.isNotEmpty) {
+        String receptorId = amigoSnapshot.docs.first.id;
+
+        // Crear el chat si no existe
+        await _crearChatSiNoExiste(usuarioActualId, receptorId);
+
+        String chatId = await _generateChatId(usuarioActualId, receptorId);
+
+        FirebaseFirestore.instance
+            .collection('chats')
+            .doc(chatId)
+            .collection('mensajes')
+            .add({
+          'texto': _mensajeController.text,
+          'remitente': usuarioActualId,
+          'receptor': receptorId,
+          'timestamp': Timestamp.now(),
+        });
+
+        _mensajeController.clear();
+      } else {
+        print('No se encontró al amigo con el nombre: $amigoNombre');
+      }
+    }
+  }
+
+  Future<String> _generateChatId(String usuarioActualId, String receptorId) async {
+    // Generar un ID de chat combinando los IDs de usuario
+    List<String> ids = [usuarioActualId, receptorId];
+    ids.sort(); // Ordenar los IDs alfabéticamente
     return ids.join('_');
   }
 
-
-
- void _enviarMensaje() async {
-  if (_mensajeController.text.isNotEmpty) {
-    String chatId = _chatId();
-    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    String amigoNombre = widget.amigo;
-
-    // Obtener el ID del amigo usando el nombre
-    final amigoSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('user', isEqualTo: amigoNombre)
+  Future<void> _crearChatSiNoExiste(String usuarioActualId, String receptorId) async {
+    final chatsQuerySnapshot = await FirebaseFirestore.instance
+        .collection('chats')
+        .where('participantes', arrayContainsAny: [usuarioActualId, receptorId])
         .get();
 
-    if (amigoSnapshot.docs.isNotEmpty) {
-      String receptorId = amigoSnapshot.docs.first.id;
+    if (chatsQuerySnapshot.docs.isEmpty) {
+      // Si no existe un chat entre los usuarios, crearlo para ambos
+      String chatId = await _generateChatId(usuarioActualId, receptorId);
 
-      _crearChatSiNoExiste(chatId);
-
-      FirebaseFirestore.instance
-          .collection('chats')
-          .doc(chatId)
-          .collection('mensajes')
-          .doc() // Genera un ID único para el mensaje
-          .set({
-        'texto': _mensajeController.text,
-        'remitente': usuarioActualId,
-        'receptor': receptorId,
-        'timestamp': Timestamp.now(),
-      })
-      .then((value) {
-        print('Mensaje enviado con éxito');
-      })
-      .catchError((error) {
-        print('Error al enviar el mensaje: $error');
+      await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
+        'participantes': [usuarioActualId, receptorId],
+        'ultimoMensaje': Timestamp.now(),
       });
 
-      _mensajeController.clear();
-    } else {
-      print('No se encontró al amigo con el nombre: $amigoNombre');
+      // Guardar el ID del chat en los documentos de usuario
+      await _guardarChatEnUsuario(usuarioActualId, chatId);
+      await _guardarChatEnUsuario(receptorId, chatId);
+
+      print('Chat creado con éxito');
     }
   }
-}
 
+  Future<void> _guardarChatEnUsuario(String userId, String chatId) async {
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'chats': FieldValue.arrayUnion([chatId]),
+    });
+  }
 
+  Future<String> _getFriendId(String friendName) async {
+    String friendId = '';
 
-
-
-  void _crearChatSiNoExiste(String chatId) async {
-    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    String amigoNombre = widget.amigo;
-
-    final amigoSnapshot = await FirebaseFirestore.instance
+    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
         .collection('users')
-        .where('user', isEqualTo: amigoNombre)
+        .where('user', isEqualTo: friendName)
+        .limit(1)
         .get();
 
-    if (amigoSnapshot.docs.isNotEmpty) {
-      String amigoId = amigoSnapshot.docs.first.id;
-
-      final chatSnapshot = await FirebaseFirestore.instance
-          .collection('chats')
-          .where('participantes', arrayContainsAny: [usuarioActualId, amigoId])
-          .get();
-
-      if (chatSnapshot.docs.isNotEmpty) {
-        print('El chat ya existe');
-        return;
-      }
-
-      FirebaseFirestore.instance.runTransaction((transaction) async {
-        final newChatSnapshot = await transaction.get(
-          FirebaseFirestore.instance.collection('chats').doc(chatId),
-        );
-
-        if (!newChatSnapshot.exists) {
-          transaction.set(
-            FirebaseFirestore.instance.collection('chats').doc(chatId),
-            {
-              'participantes': [usuarioActualId, amigoId],
-              'ultimoMensaje': Timestamp.now(),
-            },
-          );
-          print('Chat creado con éxito');
-        } else {
-          transaction.update(
-            FirebaseFirestore.instance.collection('chats').doc(chatId),
-            {
-              'ultimoMensaje': Timestamp.now(),
-            },
-          );
-          print('Tiempo del último mensaje actualizado con éxito');
-        }
-      }).catchError((error) {
-        print('Error en la transacción: $error');
-      });
-    } else {
-      print('No se encontró al amigo con el nombre: $amigoNombre');
+    if (snapshot.docs.isNotEmpty) {
+      friendId = snapshot.docs.first.id;
     }
+
+    return friendId;
+  }
+
+  Future<String> _chatId() async {
+    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    // Obtener el ID del amigo
+    String amigoNombre = widget.amigo;
+    String amigoId = await _getFriendId(amigoNombre);
+
+    print('Usuario Actual ID: $usuarioActualId');
+    print('Amigo ID: $amigoId');
+
+    // Ordenar los IDs alfabéticamente para garantizar la unicidad del chat
+    List<String> ids = [usuarioActualId, amigoId];
+    ids.sort();
+    return ids.join('_');
   }
 }

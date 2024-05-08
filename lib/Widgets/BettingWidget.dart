@@ -26,12 +26,6 @@ class _BettingWidgetState extends State<BettingWidget> {
   List<String> grupos = []; // Lista para almacenar los grupos del usuario
   String? selectedGroup; // Variable para almacenar el grupo seleccionado
   final TextEditingController _nombreApuestaController = TextEditingController();
-  final TextEditingController _equipo1Controller = TextEditingController();
-  final TextEditingController _equipo2Controller = TextEditingController();
-  List<String> grupos = [];
-  String? selectedGroup;
-  TextEditingController _nombreApuestaController = TextEditingController();
-  DateTime? _fechaSeleccionada;
   Map<String, List<String>> leagueMatchesMap = {};
   int apuestaMinima = 10;
   int apuestaMaxima = 200;
