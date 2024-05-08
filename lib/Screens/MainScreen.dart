@@ -26,6 +26,7 @@ class MainScreen extends StatefulWidget {
   @override
   _MainScreenState createState() => _MainScreenState();
 }
+
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late String _profileImageId = '';
@@ -51,26 +52,26 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   final List<String> _imageTeamIds = [
-    'barcelona',
-    'madrid',
-    'atleticoMadrid',
-    'girona',
-    'chelsea',
-    'liverpool',
-    'city',
-    'united',
-    'arsenal',
-    'leverkusen',
-    'munchen',
-    'dortmund',
-    'psg',
-    'monaco',
-    'lyon',
-    'marsella',
-    'inter',
-    'milan',
-    'juventus',
-    'napoli'
+    'team1',
+    'team2',
+    'team3',
+    'team4',
+    'team5',
+    'team6',
+    'team7',
+    'team8',
+    'team9',
+    'team10',
+    'team11',
+    'team12',
+    'team13',
+    'team14',
+    'team15',
+    'team16',
+    'team17',
+    'team18',
+    'team19',
+    'team20'
   ];
 
   static final List<Widget> _widgetOptions = <Widget>[
@@ -95,7 +96,7 @@ class _MainScreenState extends State<MainScreen> {
       DocumentSnapshot<Map<String, dynamic>> userData =
           await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       String profileImageId = userData.get('profileImageid');
-      _profileImageIdNotifier.value = profileImageId.isNotEmpty ? profileImageId : 'usuario1';
+      _profileImageIdNotifier.value = profileImageId.isNotEmpty ? profileImageId : 'imagenpordefecto';
     }
   }
 
@@ -271,11 +272,11 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
             ListTile(
-              title: Text('Tienda diaria'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => TiendaWidget()));
-              }
+                title: Text('Tienda diaria'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => TiendaWidget()));
+                }
             ),
             ListTile(
               title: Text('Cerrar Sesión'),
@@ -289,7 +290,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Future<void> _showProfileDialog(BuildContext context) async {
+Future<void> _showProfileDialog(BuildContext context) async {
   User? user = FirebaseAuth.instance.currentUser;
   if (user != null) {
     DocumentSnapshot<Map<String, dynamic>> userData =
@@ -426,7 +427,7 @@ class _MainScreenState extends State<MainScreen> {
                                     setState(() {
                                       selectedImageId = imageId;
                                     });
-                                    _pickAndSetImage(imageId); // Actualiza la imagen de perfil cuando se selecciona una imagen
+                                    _pickAndSetImage(imageId, 'user'); // Actualiza la imagen de perfil cuando se selecciona una imagen
                                   },
                                   child: Container(
                                     width: 100,
@@ -451,7 +452,7 @@ class _MainScreenState extends State<MainScreen> {
                                     setState(() {
                                       selectedImageId = imageId;
                                     });
-                                    _pickAndSetImage(imageId); // Actualiza la imagen de perfil cuando se selecciona una imagen
+                                    _pickAndSetImage(imageId, 'team'); // Actualiza la imagen de perfil cuando se selecciona una imagen
                                   },
                                   child: Container(
                                     width: 100,
@@ -463,7 +464,7 @@ class _MainScreenState extends State<MainScreen> {
                                         width: 4,
                                       ),
                                       image: DecorationImage(
-                                        image: AssetImage('assets/imagenuser/$imageId.png'),
+                                        image: AssetImage('imagenTeam/$imageId.png'),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
@@ -501,6 +502,8 @@ class _MainScreenState extends State<MainScreen> {
 }
 
 
+
+
   Future<void> _signOut(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
@@ -510,22 +513,32 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  Future<void> _pickAndSetImage(String imageId) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        String imagePath = 'assets/imagenuser/$imageId.png';
-        DocumentSnapshot<Map<String, dynamic>> userData =
-            await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        Map<String, dynamic> updatedUserData = userData.data() ?? {};
-        updatedUserData['profileImageid'] = imagePath;
-
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
-
-        _profileImageIdNotifier.value = imagePath; // Notifica el cambio a ValueNotifier
-      } catch (e) {
-        print('Error setting image: $e');
+  Future<void> _pickAndSetImage(String imageId, String imageType) async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    try {
+      String imagePath = '';
+      if (imageType == 'user') {
+        imagePath = 'assets/imagenuser/$imageId.png';
+      } else if (imageType == 'team') {
+        imagePath = '../../assets/imagenTeam/$imageId.png';
       }
+      DocumentSnapshot<Map<String, dynamic>> userData =
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      Map<String, dynamic> updatedUserData = userData.data() ?? {};
+      updatedUserData['profileImageid'] = imagePath;
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(updatedUserData);
+
+      _profileImageIdNotifier.value = imagePath; // Notifica el cambio a ValueNotifier
+      setState(() {
+        _profileImageId = imagePath; // Actualiza la imagen de perfil en la pantalla
+      });
+    } catch (e) {
+      print('Error setting image: $e');
     }
   }
+}
+
+
 }
