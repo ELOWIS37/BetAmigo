@@ -1,3 +1,4 @@
+import 'package:betamigo/Screens/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,68 +29,6 @@ class _SocialWidgetState extends State<SocialWidget> {
   final TextEditingController _amigoController = TextEditingController();
   final TextEditingController _grupoController = TextEditingController();
 
-  // void _aceptarSolicitud(String from) {
-  //   // Agregar al amigo a la lista de amigos
-  //   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
-  //     'amigos': FieldValue.arrayUnion([from])
-  //   });
-
-  //   // Eliminar la solicitud de amistad pendiente
-  //   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
-  //     .where('from', isEqualTo: from)
-  //     .get()
-  //     .then((QuerySnapshot querySnapshot) {
-  //       querySnapshot.docs.forEach((doc) {
-  //         doc.reference.delete();
-  //       });
-  //     });
-
-  //   // Actualizar la lista de solicitudes en la interfaz
-  //   setState(() {
-  //     solicitudes.removeWhere((solicitud) => solicitud == from);
-  //   });
-  // }
-
-// void _aceptarSolicitud(String from) {
-//   String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-//   // Agregar al amigo a la lista de amigos del usuario actual
-//   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).update({
-//     'amigos': FieldValue.arrayUnion([from])
-//   }).catchError((error) {
-//     print('Error al agregar el amigo: $error');
-//   });
-
-//   // Buscar al usuario por nombre y agregar al usuario actual a su lista de amigos
-//   FirebaseFirestore.instance.collection('users').where('user', isEqualTo: from).get().then((QuerySnapshot querySnapshot) {
-//     if (querySnapshot.docs.isNotEmpty) {
-//       String usuarioSolicitudId = querySnapshot.docs.first.id;
-
-//       FirebaseFirestore.instance.collection('users').doc(usuarioSolicitudId).update({
-//         'amigos': FieldValue.arrayUnion([usuarioActualId])
-//       }).catchError((error) {
-//         print('Error al agregar el amigo al usuario que envió la solicitud: $error');
-//       });
-//     } else {
-//       print('El usuario con nombre $from no existe.');
-//     }
-//   });
-
-//   // Eliminar la solicitud de amistad pendiente
-//   FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
-//     .where('from', isEqualTo: from)
-//     .get()
-//     .then((QuerySnapshot querySnapshot) {
-//       querySnapshot.docs.forEach((doc) {
-//         doc.reference.delete();
-//       });
-//     });
-
-//   // Actualizar la lista de solicitudes en la interfaz
-//   setState(() {
-//     solicitudes.removeWhere((solicitud) => solicitud == from);
-//   });
-// }
 
 void _aceptarSolicitud(String from) {
   String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -142,56 +81,6 @@ void _aceptarSolicitud(String from) {
 }
 
 
-
-
-
-
-
-
-// Widget _buildSolicitudesTab() {
-//   return Padding(
-//     padding: const EdgeInsets.all(16.0),
-//     child: StreamBuilder<List<String>>(
-//       stream: _cargarSolicitudes(),
-//       builder: (context, snapshot) {
-//         if (snapshot.hasError) {
-//           return Center(child: Text('Error: ${snapshot.error}'));
-//         }
-
-//         if (snapshot.connectionState == ConnectionState.waiting) {
-//           return const Center(child: CircularProgressIndicator());
-//         }
-
-//         final solicitudes = snapshot.data ?? [];
-
-//         return solicitudes.isEmpty
-//           ? const Center(
-//               child: Text(
-//                 'No hay solicitudes de amistad pendientes.',
-//                 style: TextStyle(fontSize: 18.0),
-//               ),
-//             )
-//           : Expanded(
-//               child: ListView.builder(
-//                 itemCount: solicitudes.length,
-//                 itemBuilder: (context, index) {
-//                   final solicitud = solicitudes[index];
-//                   return ListTile(
-//                     title: Text('Solicitud de amistad de $solicitud'),
-//                     trailing: ElevatedButton(
-//                       onPressed: () {
-//                         _aceptarSolicitud(solicitud);
-//                       },
-//                       child: const Text('Aceptar'),
-//                     ),
-//                   );
-//                 },
-//               ),
-//             );
-//       },
-//     ),
-//   );
-// }
 
 Widget _buildSolicitudesTab() {
   return Padding(
@@ -548,50 +437,6 @@ Widget build(BuildContext context) {
     );
   }
 
-//   void _crearGrupo(List<String> amigosSeleccionados) {
-//   String nombreGrupo = _grupoController.text.trim();
-//   String usuarioActual = FirebaseAuth.instance.currentUser?.displayName ?? '';
-
-//   if (nombreGrupo.isNotEmpty && amigosSeleccionados.isNotEmpty) {
-//     // Añadir al usuario actual a la lista de amigos seleccionados
-//     if (!amigosSeleccionados.contains(usuarioActual)) {
-//       amigosSeleccionados.add(usuarioActual);
-//     }
-
-//     setState(() {
-//       grupos.add({
-//         'nombre': nombreGrupo,
-//         'miembros': List<String>.from(amigosSeleccionados),
-//       });
-//       _grupoController.clear();
-//     });
-
-//     // Guardar el grupo en Firestore
-//     FirebaseFirestore.instance.collection('grupos').add({
-//       'nombre': nombreGrupo,
-//       'miembros': amigosSeleccionados,
-//     });
-//   } else {
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: Text('Error'),
-//           content: Text('Debes ingresar un nombre para el grupo y seleccionar al menos un amigo.'),
-//           actions: <Widget>[
-//             TextButton(
-//               onPressed: () {
-//                 Navigator.of(context).pop();
-//               },
-//               child: Text('OK'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-// }
-
 void _crearGrupo(List<String> amigosSeleccionados) {
   String nombreGrupo = _grupoController.text.trim();
   String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -667,98 +512,70 @@ void _crearGrupo(List<String> amigosSeleccionados) {
     );
   }
 }
+void _mostrarDetalleAmigo(String amigo) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ChatScreen(amigo: amigo),
+    ),
+  );
+}
 
 
-  // void _crearGrupo(List<String> amigosSeleccionados) {
-  //   String nombreGrupo = _grupoController.text.trim();
-  //   if (nombreGrupo.isNotEmpty && amigosSeleccionados.isNotEmpty) {
-  //     setState(() {
-  //       grupos.add({
-  //         'nombre': nombreGrupo,
-  //         'miembros': List<String>.from(amigosSeleccionados),
-  //       });
-  //       _grupoController.clear();
-  //     });
-  //     // Guardar el grupo en Firestore
-  //     FirebaseFirestore.instance.collection('grupos').add({
-  //       'nombre': nombreGrupo,
-  //       'miembros': amigosSeleccionados,
-  //     });
-  //   } else {
-  //     showDialog(
-  //       context: context,
-  //       builder: (BuildContext context) {
-  //         return AlertDialog(
-  //           title: Text('Error'),
-  //           content: Text('Debes ingresar un nombre para el grupo y seleccionar al menos un amigo.'),
-  //           actions: <Widget>[
-  //             TextButton(
-  //               onPressed: () {
-  //                 Navigator.of(context).pop();
-  //               },
-  //               child: Text('OK'),
-  //             ),
-  //           ],
+  // void _mostrarDetalleAmigo(String amigo) {
+  //   FirebaseFirestore.instance.collection('users')
+  //       .where('user', isEqualTo: amigo)
+  //       .get()
+  //       .then((QuerySnapshot querySnapshot) {
+  //     if (querySnapshot.docs.isNotEmpty) {
+  //       var userData = querySnapshot.docs.first.data() as Map<String, dynamic>?;
+
+  //       if (userData != null && userData.containsKey('profileImageid')) {
+  //         showDialog(
+  //           context: context,
+  //           builder: (BuildContext context) {
+  //             return AlertDialog(
+  //               title: Text('Detalles de Amigo'),
+  //               content: Column(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: <Widget>[
+  //                   Text('Nombre: $amigo'),
+  //                   SizedBox(height: 10),
+  //                   Image.network(
+  //                     userData['profileImageid'],
+  //                     width: 100,
+  //                     height: 100,
+  //                     fit: BoxFit.cover,
+  //                   ),
+  //                 ],
+  //               ),
+  //               actions: <Widget>[
+  //                 TextButton(
+  //                   onPressed: () {
+  //                     _eliminarAmigo(amigo);
+  //                     Navigator.of(context).pop();
+  //                   },
+  //                   child: Text('Eliminar'),
+  //                 ),
+  //                 TextButton(
+  //                   onPressed: () {
+  //                     Navigator.of(context).pop();
+  //                   },
+  //                   child: Text('Cerrar'),
+  //                 ),
+  //               ],
+  //             );
+  //           },
   //         );
-  //       },
-  //     );
-  //   }
+  //       } else {
+  //         _mostrarError('El usuario no tiene una imagen de perfil.');
+  //       }
+  //     } else {
+  //       _mostrarError('El usuario no existe.');
+  //     }
+  //   });
   // }
-
-  void _mostrarDetalleAmigo(String amigo) {
-    FirebaseFirestore.instance.collection('users')
-        .where('user', isEqualTo: amigo)
-        .get()
-        .then((QuerySnapshot querySnapshot) {
-      if (querySnapshot.docs.isNotEmpty) {
-        var userData = querySnapshot.docs.first.data() as Map<String, dynamic>?;
-
-        if (userData != null && userData.containsKey('profileImageid')) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text('Detalles de Amigo'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('Nombre: $amigo'),
-                    SizedBox(height: 10),
-                    Image.network(
-                      userData['profileImageid'],
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                    ),
-                  ],
-                ),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () {
-                      _eliminarAmigo(amigo);
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('Eliminar'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('Cerrar'),
-                  ),
-                ],
-              );
-            },
-          );
-        } else {
-          _mostrarError('El usuario no tiene una imagen de perfil.');
-        }
-      } else {
-        _mostrarError('El usuario no existe.');
-      }
-    });
-  }
 
   void _mostrarError(String mensaje) {
     showDialog(
