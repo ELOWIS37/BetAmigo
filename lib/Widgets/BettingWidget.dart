@@ -420,7 +420,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
         FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: nombreApuesta).get().then((apuestasSnapshot) {
           if (apuestasSnapshot.docs.isNotEmpty) {
             apuestasSnapshot.docs.forEach((apuestaDoc) {
-              List<dynamic> usuarios = apuestaDoc['usuarios'];
+              List<dynamic> usuarios = apuestaDoc['usuarios'];   
               for (int i = 0; i < usuarios.length; i++) {
                 if (usuarios[i]['nombre'] == usuarioActualNombre) {
                   usuarios[i]['goles-local'] = int.parse(golesLocal);
@@ -430,6 +430,16 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                     print('Apuesta actualizada exitosamente para el usuario $usuarioActualNombre');
                   }).catchError((error) {
                     print('Error al actualizar la apuesta: $error');
+                  });
+
+                  // Agregar la cantidad apostada al campo 'bote' del documento
+                  int actualBote = apuestaDoc['bote'] ?? 0;
+                  int cantidadApostada = int.parse(cantidad);
+                  int nuevoBote = actualBote + cantidadApostada;
+                  apuestaDoc.reference.update({'bote': nuevoBote}).then((_) {
+                    print('Bote actualizado exitosamente para la apuesta $nombreApuesta');
+                  }).catchError((error) {
+                    print('Error al actualizar el bote: $error');
                   });
                   return;
                 }
@@ -451,6 +461,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
     print('No hay ningún usuario autenticado');
   }
 }
+
 
 
   void _crearNuevaApuesta() async {
