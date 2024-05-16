@@ -23,9 +23,9 @@ class _BettingWidgetState extends State<BettingWidget> {
   String? selectedLeague;
   String? selectedMatch; 
   List<String> matches = [];
-  List<String> grupos = []; // Lista para almacenar los grupos del usuario
-  String? selectedGroup; // Variable para almacenar el grupo seleccionado
-  final TextEditingController _nombreApuestaController = TextEditingController();
+  List<String> grupos = [];
+  String? selectedGroup;
+  TextEditingController _nombreApuestaController = TextEditingController();
   Map<String, List<String>> leagueMatchesMap = {};
   int apuestaMinima = 10;
   int apuestaMaxima = 200;
@@ -44,54 +44,52 @@ class _BettingWidgetState extends State<BettingWidget> {
     }
   }
 
-Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
-  final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
-  if (response.statusCode == 200) {
-    final dynamic data = json.decode(response.body);
-    setState(() {
-      List<String> leagueMatches = [];
-      for (var match in data['matches']) {
-        final homeTeamName = match['homeTeam']['name'];
-        final awayTeamName = match['awayTeam']['name'];
-        leagueMatches.add('$homeTeamName vs $awayTeamName');
-      }
-      leagueMatchesMap[leagueCode] = leagueMatches;
-      if (selectedMatch == null && leagueMatches.isNotEmpty) {
-        selectedMatch = leagueMatches.first;
-      }
-    });
-  } else {
-    print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
-  }
-}
-
-
-Future<void> _fetchUserGroups() async {
-  String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
-
-  if (response.exists) {
-    String usuarioActualName = response.data()?['user'];
-    final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
-
-    if (groupsResponse.docs.isNotEmpty) {
+  Future<void> _fetchNextWeekLiveScores(String leagueCode) async {
+    final response = await http.get(Uri.parse('http://localhost:3000/api/$leagueCode/next-week-live-scores'));
+    if (response.statusCode == 200) {
+      final dynamic data = json.decode(response.body);
       setState(() {
-        grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
-        // Si el usuario está dentro de algún grupo, carga las apuestas del primer grupo
-        selectedGroup = grupos.first;
-        _fetchGroupBets(selectedGroup!);
+        List<String> leagueMatches = [];
+        for (var match in data['matches']) {
+          final homeTeamName = match['homeTeam']['name'];
+          final awayTeamName = match['awayTeam']['name'];
+          leagueMatches.add('$homeTeamName vs $awayTeamName');
+        }
+        leagueMatchesMap[leagueCode] = leagueMatches;
+        if (selectedMatch == null && leagueMatches.isNotEmpty) {
+          selectedMatch = leagueMatches.first;
+        }
       });
+    } else {
+      print('Error al cargar los próximos partidos para la liga $leagueCode: ${response.statusCode}');
     }
   }
-}
-Future<void> _fetchGroupBets(String groupName) async {
-  final groupBetsSnapshot = await FirebaseFirestore.instance.collection('apuestas').where('grupo', isEqualTo: groupName).get();
-  setState(() {
-    apuestas = groupBetsSnapshot.docs.map((doc) => doc.data()['nombre'] as String).toList();
-  });
-}
 
+  Future<void> _fetchUserGroups() async {
+    String usuarioActualId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final response = await FirebaseFirestore.instance.collection('users').doc(usuarioActualId).get();
 
+    if (response.exists) {
+      String usuarioActualName = response.data()?['user'];
+      final groupsResponse = await FirebaseFirestore.instance.collection('grupos').where('miembros', arrayContains: usuarioActualName).get();
+
+      if (groupsResponse.docs.isNotEmpty) {
+        setState(() {
+          grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
+          // Si el usuario está dentro de algún grupo, carga las apuestas del primer grupo
+          selectedGroup = grupos.first;
+          _fetchGroupBets(selectedGroup!);
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchGroupBets(String groupName) async {
+    final groupBetsSnapshot = await FirebaseFirestore.instance.collection('apuestas').where('grupo', isEqualTo: groupName).get();
+    setState(() {
+      apuestas = groupBetsSnapshot.docs.map((doc) => doc.data()['nombre'] as String).toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +143,7 @@ Future<void> _fetchGroupBets(String groupName) async {
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
-                          return _mostrarApostarDialog(context);
+                          return _mostrarApostarDialog(context, index);
                         },
                       );
                     },
@@ -296,84 +294,222 @@ Future<void> _fetchGroupBets(String groupName) async {
     );
   }
 
-  Widget _mostrarApostarDialog(BuildContext context) {
-    return AlertDialog(
-      title: Text('Introduce tu apuesta'),
-      content: Container(
-        height: 150,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextFormField(
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Cantidad',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+Widget _mostrarApostarDialog(BuildContext context, int index) {
+  TextEditingController _cantidadController = TextEditingController();
+  TextEditingController _golesLocalController = TextEditingController();
+  TextEditingController _golesVisitanteController = TextEditingController();
+
+  return AlertDialog(
+    title: Text('Introduce tu apuesta'),
+    content: Container(
+      height: 200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextFormField(
+            controller: _golesLocalController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Goles Locales',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor, introduce una cantidad';
-                }
-                int cantidad = int.tryParse(value)!;
-                if (cantidad < apuestaMinima || cantidad > apuestaMaxima) {
-                  return 'La cantidad debe estar entre $apuestaMinima y $apuestaMaxima';
-                }
-                return null;
-              },
             ),
-          ],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, introduce una cantidad';
+              }
+              if (int.tryParse(value) == null) {
+                return 'Por favor, introduce un número válido';
+              }
+              return null;
+            },
+          ),
+          SizedBox(height: 10),
+          TextFormField(
+            controller: _golesVisitanteController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Goles Visitantes',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, introduce una cantidad';
+              }
+              if (int.tryParse(value) == null) {
+                return 'Por favor, introduce un número válido';
+              }
+              return null;
+            },
+          ),
+          SizedBox(height: 10),
+          TextFormField(
+            controller: _cantidadController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Cantidad Apostada',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, introduce una cantidad';
+              }
+              if (int.tryParse(value) == null) {
+                return 'Por favor, introduce un número válido';
+              }
+              int cantidad = int.tryParse(value)!;
+              if (cantidad < apuestaMinima || cantidad > apuestaMaxima) {
+                return 'La cantidad debe estar entre $apuestaMinima y $apuestaMaxima';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+        child: Text('Cancelar'),
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.indigo,
         ),
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text('Cancelar'),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.indigo,
+      ElevatedButton(
+        onPressed: () {
+            _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
+          Navigator.of(context).pop();
+        },
+        child: Text('Apostar', style: TextStyle(fontSize: 16)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.indigo,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text('Apostar', style: TextStyle(fontSize: 16)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.indigo,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
-  void _crearNuevaApuesta() {
-    if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
-      FirebaseFirestore.instance.collection('apuestas').add({
-        'bote': 0,
-        'equipo_local': selectedMatch!.split(' vs ')[0],
-        'equipo_visitante': selectedMatch!.split(' vs ')[1],
-        'nombre': _nombreApuestaController.text,
-        'grupo': selectedGroup,
-      }).then((value) {
-        setState(() {
-          final nuevaApuesta =
-              '${_nombreApuestaController.text} - Grupo: $selectedGroup - Liga: $selectedLeague - Partido: $selectedMatch';
-          apuestas.add(nuevaApuesta);
+void _guardarApuesta(int index, String golesLocal, String golesVisitante, String cantidad) {
+  String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
+  if (usuarioActualEmail != null) {
+    // Buscar el usuario en la base de datos
+    FirebaseFirestore.instance.collection('users').where('email', isEqualTo: usuarioActualEmail).get().then((usersSnapshot) {
+      if (usersSnapshot.docs.isNotEmpty) {
+        String usuarioActualNombre = usersSnapshot.docs.first.get('user');
+        String nombreApuesta = apuestas[index]; // Nombre de la apuesta seleccionada
+        
+        // Construir el objeto de apuesta
+        Map<String, dynamic> apuesta = {
+          'nombre': usuarioActualNombre,
+          'goles-local': int.parse(golesLocal),
+          'goles-visitante': int.parse(golesVisitante),
+          'cantidad-apostada': int.parse(cantidad),
+        };
+
+        // Buscar y actualizar la apuesta del usuario en la colección 'apuestas'
+        FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: nombreApuesta).get().then((apuestasSnapshot) {
+          if (apuestasSnapshot.docs.isNotEmpty) {
+            apuestasSnapshot.docs.forEach((apuestaDoc) {
+              List<dynamic> usuarios = apuestaDoc['usuarios'];
+              for (int i = 0; i < usuarios.length; i++) {
+                if (usuarios[i]['nombre'] == usuarioActualNombre) {
+                  usuarios[i]['goles-local'] = int.parse(golesLocal);
+                  usuarios[i]['goles-visitante'] = int.parse(golesVisitante);
+                  usuarios[i]['cantidad-apostada'] = int.parse(cantidad);
+                  apuestaDoc.reference.update({'usuarios': usuarios}).then((_) {
+                    print('Apuesta actualizada exitosamente para el usuario $usuarioActualNombre');
+                  }).catchError((error) {
+                    print('Error al actualizar la apuesta: $error');
+                  });
+                  return;
+                }
+              }
+            });
+          } else {
+            print('No se encontraron apuestas con el nombre $nombreApuesta');
+          }
+        }).catchError((error) {
+          print('Error al obtener las apuestas: $error');
         });
-        // Mostrar mensaje de éxito o realizar otras acciones si es necesario
-        print('Apuesta creada exitosamente');
-      }).catchError((error) {
+      } else {
+        print('No se encontró ningún usuario con el correo electrónico $usuarioActualEmail');
+      }
+    }).catchError((error) {
+      print('Error al obtener el usuario: $error');
+    });
+  } else {
+    print('No hay ningún usuario autenticado');
+  }
+}
+
+
+  void _crearNuevaApuesta() async {
+    if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
+      try {
+        // Buscar el documento del grupo seleccionado
+        final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
+
+        if (groupSnapshot.docs.isNotEmpty) {
+          // Obtener el documento del grupo
+          final groupDoc = groupSnapshot.docs.first;
+
+          // Obtener los usuarios del grupo
+          final List<dynamic> members = groupDoc.data()?['miembros'];
+
+          // Crear la lista de usuarios con sus apuestas
+          final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
+            return {
+              'nombre': member,
+              'goles-local': null,
+              'goles-visitante': null,
+              'cantidad-apostada': null,
+            };
+          }).toList();
+
+          // Mostrar los usuarios del grupo por consola
+          print('Usuarios del grupo $selectedGroup:');
+          usuariosConApuestas.forEach((usuario) {
+            print(usuario);
+          });
+
+          // Crear la nueva apuesta
+          final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
+            'bote': 0,
+            'equipo_local': selectedMatch!.split(' vs ')[0],
+            'equipo_visitante': selectedMatch!.split(' vs ')[1],
+            'nombre': _nombreApuestaController.text,
+            'grupo': selectedGroup,
+            'usuarios': usuariosConApuestas, // Guardar los usuarios del grupo con sus apuestas
+          });
+
+          setState(() {
+            final nuevaApuesta =
+                '${_nombreApuestaController.text}';
+            apuestas.add(nuevaApuesta);
+          });
+
+          // Mostrar mensaje de éxito o realizar otras acciones si es necesario
+          print('Apuesta creada exitosamente');
+        } else {
+          print('No se encontró el grupo $selectedGroup en la base de datos');
+        }
+      } catch (error) {
         // Manejar errores si la creación de la apuesta falla
         print('Error al crear la apuesta: $error');
-      });
+      }
     }
   }
+
 }
 
 class AnimatedApuesta extends StatefulWidget {
