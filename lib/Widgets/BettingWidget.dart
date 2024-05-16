@@ -481,7 +481,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
 }
 
 
-  void _crearNuevaApuesta() async {
+ void _crearNuevaApuesta() async {
   if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
     try {
       // Verificar si ya existe una apuesta con el mismo nombre en el grupo seleccionado
@@ -540,6 +540,11 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
         setState(() {
           final nuevaApuesta = '${_nombreApuestaController.text}';
           apuestas.add(nuevaApuesta);
+          // Limpiar las variables y los campos de texto
+          _nombreApuestaController.clear();
+          selectedGroup = null;
+          selectedLeague = null;
+          selectedMatch = null;
         });
 
         print('Apuesta creada exitosamente');
@@ -551,6 +556,8 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
     }
   }
 }
+
+
 
 
 }
