@@ -402,7 +402,6 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
 void _guardarApuesta(int index, String golesLocal, String golesVisitante, String cantidad) {
   String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
   if (usuarioActualEmail != null) {
-    // Buscar el usuario en la base de datos
     FirebaseFirestore.instance.collection('users').where('email', isEqualTo: usuarioActualEmail).get().then((usersSnapshot) {
       if (usersSnapshot.docs.isNotEmpty) {
         String usuarioActualNombre = usersSnapshot.docs.first.get('user');
@@ -441,6 +440,25 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                   }).catchError((error) {
                     print('Error al actualizar el bote: $error');
                   });
+
+                  // Descontar los betCoins del usuario
+                 final int nuevoSaldo = usersSnapshot.docs.first.data()['betCoins'] - cantidadApostada;
+                  if (nuevoSaldo >= 0) {
+                    usersSnapshot.docs.first.reference.update({'betCoins': nuevoSaldo}).then((_) {
+                      print('betCoins actualizados exitosamente para el usuario $usuarioActualNombre');
+                    }).catchError((error) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Error al actualizar los betCoins del usuario: $error'),
+                        backgroundColor: Colors.red,
+                      ));
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('El usuario no tiene suficientes betCoins para realizar esta apuesta.'),
+                      backgroundColor: Colors.red,
+                    ));
+                  }
+
                   return;
                 }
               }
@@ -461,6 +479,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
     print('No hay ningún usuario autenticado');
   }
 }
+
 
   void _crearNuevaApuesta() async {
   if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
