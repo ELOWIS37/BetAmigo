@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'resultadosapuesta.dart';
 
 class BettingWidget extends StatefulWidget {
   @override
@@ -92,7 +93,7 @@ class _BettingWidgetState extends State<BettingWidget> {
   }
 
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -691,6 +692,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
       print('Error al crear la apuesta: $error');
     }
   }
+  
 }
 
 
@@ -740,6 +742,15 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
     super.dispose();
   }
 
+  void _mostrarResultado() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResultadosApuesta(nombreApuesta: widget.nombreApuesta),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SlideTransition(
@@ -758,10 +769,7 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
               ),
               IconButton(
                 icon: Icon(Icons.emoji_events, color: Colors.indigo),
-                onPressed: () {
-                  // Aquí puedes definir la acción del botón
-                  print('Trofeo pulsado: ${widget.nombreApuesta}');
-                },
+                onPressed: _mostrarResultado,
               ),
             ],
           ),
@@ -770,3 +778,5 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
     );
   }
 }
+
+
