@@ -400,7 +400,23 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                     if (usuarioActual != null) {
                       int cantidadApostada = usuarioActual['cantidad-apostada'];
                       if (cantidadApostada != 0) {
-                        print('No se puede actualizar la apuesta porque la cantidad apostada es diferente de cero.');
+              showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('Ya se ha realizado una apuesta'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
                       } else {
                         _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
                         Navigator.of(context).pop();
@@ -577,7 +593,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
 
           // Crear la lista de usuarios con sus apuestas
           final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
-             return {
+            return {
               'nombre': member,
               'goles-local': 0,
               'goles-visitante': 0,
