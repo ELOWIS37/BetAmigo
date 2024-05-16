@@ -335,160 +335,98 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Introduce tu apuesta',
-            style: TextStyle(
-              fontSize: 20.0,
-              fontWeight: FontWeight.bold,
-              color: Colors.indigo,
+          TextFormField(
+            controller: _golesLocalController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Goles Locales',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, introduce una cantidad';
+              }
+              if (int.tryParse(value) == null) {
+                return 'Por favor, introduce un número válido';
+              }
+              return null;
+            },
           ),
-          const SizedBox(height: 20.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () => _decrementGoles(_golesLocalController),
+          SizedBox(height: 10),
+          TextFormField(
+            controller: _golesVisitanteController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Goles Visitantes',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              Expanded(
-                child: TextField(
-                  controller: _golesLocalController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18.0),
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: 'Goles Locales',
-                    labelStyle: const TextStyle(color: Colors.indigo),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => _incrementGoles(_golesLocalController),
-              ),
-            ],
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, introduce una cantidad';
+              }
+              if (int.tryParse(value) == null) {
+                return 'Por favor, introduce un número válido';
+              }
+              return null;
+            },
           ),
-          const SizedBox(height: 10.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () => _decrementGoles(_golesVisitanteController),
+          SizedBox(height: 10),
+          TextFormField(
+            controller: _cantidadController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Cantidad Apostada',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              Expanded(
-                child: TextField(
-                  controller: _golesVisitanteController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18.0),
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: 'Goles Visitantes',
-                    labelStyle: const TextStyle(color: Colors.indigo),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => _incrementGoles(_golesVisitanteController),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: _decrementCantidad,
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _cantidadController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18.0),
-                  enabled: false,
-                  decoration: InputDecoration(
-                    labelText: 'Cantidad Apostada',
-                    labelStyle: const TextStyle(color: Colors.indigo),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _incrementCantidad,
-              ),
-            ],
-          ),
-          const SizedBox(height: 20.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(
-                    color: Colors.indigo,
-                    fontSize: 16.0,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  backgroundColor: Colors.grey[200],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _guardarApuesta(
-                    index,
-                    _golesLocalController.text,
-                    _golesVisitanteController.text,
-                    _cantidadController.text,
-                  );
-                  Navigator.of(context).pop();
-                },
-                child: const Text(
-                  'Apostar',
-                  style: TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0), backgroundColor: Colors.indigo,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-            ],
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor, introduce una cantidad';
+              }
+              if (int.tryParse(value) == null) {
+                return 'Por favor, introduce un número válido';
+              }
+              int cantidad = int.tryParse(value)!;
+              if (cantidad < apuestaMinima || cantidad > apuestaMaxima) {
+                return 'La cantidad debe estar entre $apuestaMinima y $apuestaMaxima';
+              }
+              return null;
+            },
           ),
         ],
       ),
     ),
+    actions: <Widget>[
+      TextButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+        child: Text('Cancelar'),
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.indigo,
+        ),
+      ),
+      ElevatedButton(
+        onPressed: () {
+            _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
+          Navigator.of(context).pop();
+        },
+        child: Text('Apostar', style: TextStyle(fontSize: 16)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.indigo,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+    ],
   );
 }
-
-
-
 
 void _guardarApuesta(int index, String golesLocal, String golesVisitante, String cantidad) {
   String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
@@ -514,6 +452,13 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
               List<dynamic> usuarios = apuestaDoc['usuarios'];   
               for (int i = 0; i < usuarios.length; i++) {
                 if (usuarios[i]['nombre'] == usuarioActualNombre) {
+                  // Mostrar los valores actuales antes de actualizar
+                  print('Valores actuales antes de actualizar:');
+                  print('Nombre: ${usuarios[i]['nombre']}');
+                  print('Goles local: ${usuarios[i]['goles-local']}');
+                  print('Goles visitante: ${usuarios[i]['goles-visitante']}');
+                  print('Cantidad apostada: ${usuarios[i]['cantidad-apostada']}');
+
                   usuarios[i]['goles-local'] = int.parse(golesLocal);
                   usuarios[i]['goles-visitante'] = int.parse(golesVisitante);
                   usuarios[i]['cantidad-apostada'] = int.parse(cantidad);
@@ -523,6 +468,13 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                     print('Error al actualizar la apuesta: $error');
                   });
 
+                  // Mostrar los nuevos valores actualizados
+                  print('Nuevos valores después de la actualización:');
+                  print('Nombre: ${usuarios[i]['nombre']}');
+                  print('Goles local: ${usuarios[i]['goles-local']}');
+                  print('Goles visitante: ${usuarios[i]['goles-visitante']}');
+                  print('Cantidad apostada: ${usuarios[i]['cantidad-apostada']}');
+                  
                   // Agregar la cantidad apostada al campo 'bote' del documento
                   int actualBote = apuestaDoc['bote'] ?? 0;
                   int cantidadApostada = int.parse(cantidad);
@@ -561,22 +513,17 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
         // Buscar el documento del grupo seleccionado
         final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
 
-        if (groupSnapshot.docs.isNotEmpty) {
-          // Obtener el documento del grupo
-          final groupDoc = groupSnapshot.docs.first;
-
-          // Obtener los usuarios del grupo
-          final List<dynamic> members = groupDoc.data()?['miembros'];
-
-          // Crear la lista de usuarios con sus apuestas
-          final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
-            return {
-              'nombre': member,
-              'goles-local': null,
-              'goles-visitante': null,
-              'cantidad-apostada': null,
-            };
-          }).toList();
+      if (groupSnapshot.docs.isNotEmpty) {
+        final groupDoc = groupSnapshot.docs.first;
+        final List<dynamic> members = groupDoc.data()?['miembros'];
+        final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
+          return {
+            'nombre': member,
+            'goles-local': null,
+            'goles-visitante': null,
+            'cantidad-apostada': null,
+          };
+        }).toList();
 
           // Mostrar los usuarios del grupo por consola
           print('Usuarios del grupo $selectedGroup:');
