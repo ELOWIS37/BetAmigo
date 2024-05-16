@@ -363,8 +363,8 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                 return 'Por favor, introduce un número válido';
               }
               int cantidad = int.tryParse(value)!;
-              if (cantidad < apuestaMinima || cantidad > apuestaMaxima) {
-                return 'La cantidad debe estar entre $apuestaMinima y $apuestaMaxima';
+              if (cantidad <= 0) {
+                return 'La cantidad apostada debe ser mayor que cero';
               }
               return null;
             },
@@ -384,8 +384,45 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
       ),
       ElevatedButton(
         onPressed: () {
-            _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
-          Navigator.of(context).pop();
+          // Obtener el nombre de usuario actual
+          String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
+          if (usuarioActualEmail != null) {
+            FirebaseFirestore.instance.collection('users').where('email', isEqualTo: usuarioActualEmail).get().then((usersSnapshot) {
+              if (usersSnapshot.docs.isNotEmpty) {
+                String usuarioActualNombre = usersSnapshot.docs.first.get('user');
+                // Obtener la apuesta correspondiente al usuario actual
+                String nombreApuesta = apuestas[index];
+                FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: nombreApuesta).get().then((apuestasSnapshot) {
+                  if (apuestasSnapshot.docs.isNotEmpty) {
+                    List<dynamic> usuarios = apuestasSnapshot.docs.first['usuarios'];
+                    // Encontrar el usuario actual en la lista de usuarios de la apuesta
+                    Map<String, dynamic>? usuarioActual = usuarios.firstWhere((usuario) => usuario['nombre'] == usuarioActualNombre, orElse: () => null);
+                    if (usuarioActual != null) {
+                      int cantidadApostada = usuarioActual['cantidad-apostada'];
+                      if (cantidadApostada != 0) {
+                        print('No se puede actualizar la apuesta porque la cantidad apostada es diferente de cero.');
+                      } else {
+                        _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
+                        Navigator.of(context).pop();
+                      }
+                    } else {
+                      print('No se encontró el usuario actual en la lista de usuarios de la apuesta');
+                    }
+                  } else {
+                    print('No se encontró ninguna apuesta con el nombre $nombreApuesta');
+                  }
+                }).catchError((error) {
+                  print('Error al obtener la apuesta: $error');
+                });
+              } else {
+                print('No se encontró ningún usuario con el correo electrónico $usuarioActualEmail');
+              }
+            }).catchError((error) {
+              print('Error al obtener el usuario actual: $error');
+            });
+          } else {
+            print('No hay ningún usuario autenticado');
+          }
         },
         child: Text('Apostar', style: TextStyle(fontSize: 16)),
         style: ElevatedButton.styleFrom(
@@ -398,6 +435,7 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
     ],
   );
 }
+
 
 void _guardarApuesta(int index, String golesLocal, String golesVisitante, String cantidad) {
   String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
@@ -423,6 +461,13 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
               List<dynamic> usuarios = apuestaDoc['usuarios'];   
               for (int i = 0; i < usuarios.length; i++) {
                 if (usuarios[i]['nombre'] == usuarioActualNombre) {
+                  // Mostrar los valores actuales antes de actualizar
+                  print('Valores actuales antes de actualizar:');
+                  print('Nombre: ${usuarios[i]['nombre']}');
+                  print('Goles local: ${usuarios[i]['goles-local']}');
+                  print('Goles visitante: ${usuarios[i]['goles-visitante']}');
+                  print('Cantidad apostada: ${usuarios[i]['cantidad-apostada']}');
+
                   usuarios[i]['goles-local'] = int.parse(golesLocal);
                   usuarios[i]['goles-visitante'] = int.parse(golesVisitante);
                   usuarios[i]['cantidad-apostada'] = int.parse(cantidad);
@@ -432,6 +477,13 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                     print('Error al actualizar la apuesta: $error');
                   });
 
+                  // Mostrar los nuevos valores actualizados
+                  print('Nuevos valores después de la actualización:');
+                  print('Nombre: ${usuarios[i]['nombre']}');
+                  print('Goles local: ${usuarios[i]['goles-local']}');
+                  print('Goles visitante: ${usuarios[i]['goles-visitante']}');
+                  print('Cantidad apostada: ${usuarios[i]['cantidad-apostada']}');
+                  
                   // Agregar la cantidad apostada al campo 'bote' del documento
                   int actualBote = apuestaDoc['bote'] ?? 0;
                   int cantidadApostada = int.parse(cantidad);
@@ -481,9 +533,9 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
           final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
             return {
               'nombre': member,
-              'goles-local': null,
-              'goles-visitante': null,
-              'cantidad-apostada': null,
+              'goles-local': 0,
+              'goles-visitante': 0,
+              'cantidad-apostada': 0,
             };
           }).toList();
 
