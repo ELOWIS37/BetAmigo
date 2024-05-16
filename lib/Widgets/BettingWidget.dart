@@ -665,6 +665,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
         }).toList();
 
         final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
+          'nombre_partido': selectedMatch!,
           'bote': 0,
           'equipo_local': selectedMatch!.split(' vs ')[0],
           'equipo_visitante': selectedMatch!.split(' vs ')[1],
