@@ -458,22 +458,65 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
               ),
               ElevatedButton(
                 onPressed: () {
-                  _guardarApuesta(
-                    index,
-                    _golesLocalController.text,
-                    _golesVisitanteController.text,
-                    _cantidadController.text,
-                  );
-                  Navigator.of(context).pop();
+                  // Obtener el nombre de usuario actual
+                  String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
+                  if (usuarioActualEmail != null) {
+                    FirebaseFirestore.instance.collection('users').where('email', isEqualTo: usuarioActualEmail).get().then((usersSnapshot) {
+                      if (usersSnapshot.docs.isNotEmpty) {
+                        String usuarioActualNombre = usersSnapshot.docs.first.get('user');
+                        // Obtener la apuesta correspondiente al usuario actual
+                        String nombreApuesta = apuestas[index];
+                        FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: nombreApuesta).get().then((apuestasSnapshot) {
+                          if (apuestasSnapshot.docs.isNotEmpty) {
+                            List<dynamic> usuarios = apuestasSnapshot.docs.first['usuarios'];
+                            // Encontrar el usuario actual en la lista de usuarios de la apuesta
+                            Map<String, dynamic>? usuarioActual = usuarios.firstWhere((usuario) => usuario['nombre'] == usuarioActualNombre, orElse: () => null);
+                            if (usuarioActual != null) {
+                              int cantidadApostada = usuarioActual['cantidad-apostada'];
+                              if (cantidadApostada != 0) {
+                      showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Error'),
+                      content: Text('ya se ha realizado una apuesta'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                              } else {
+                                _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
+                                Navigator.of(context).pop();
+                              }
+                            } else {
+                              print('No se encontró el usuario actual en la lista de usuarios de la apuesta');
+                            }
+                          } else {
+                            print('No se encontró ninguna apuesta con el nombre $nombreApuesta');
+                          }
+                        }).catchError((error) {
+                          print('Error al obtener la apuesta: $error');
+                        });
+                      } else {
+                        print('No se encontró ningún usuario con el correo electrónico $usuarioActualEmail');
+                      }
+                    }).catchError((error) {
+                      print('Error al obtener el usuario actual: $error');
+                    });
+                  } else {
+                    print('No hay ningún usuario autenticado');
+                  }
                 },
-                child: Text(
-                  'Apostar',
-                  style: TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
+                child: Text('Apostar', style: TextStyle(fontSize: 16)),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 20.0), backgroundColor: Colors.indigo,
+                  backgroundColor: Colors.indigo,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -490,7 +533,6 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
 void _guardarApuesta(int index, String golesLocal, String golesVisitante, String cantidad) {
   String? usuarioActualEmail = FirebaseAuth.instance.currentUser?.email;
   if (usuarioActualEmail != null) {
-    // Buscar el usuario en la base de datos
     FirebaseFirestore.instance.collection('users').where('email', isEqualTo: usuarioActualEmail).get().then((usersSnapshot) {
       if (usersSnapshot.docs.isNotEmpty) {
         String usuarioActualNombre = usersSnapshot.docs.first.get('user');
@@ -511,13 +553,6 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
               List<dynamic> usuarios = apuestaDoc['usuarios'];   
               for (int i = 0; i < usuarios.length; i++) {
                 if (usuarios[i]['nombre'] == usuarioActualNombre) {
-                  // Mostrar los valores actuales antes de actualizar
-                  print('Valores actuales antes de actualizar:');
-                  print('Nombre: ${usuarios[i]['nombre']}');
-                  print('Goles local: ${usuarios[i]['goles-local']}');
-                  print('Goles visitante: ${usuarios[i]['goles-visitante']}');
-                  print('Cantidad apostada: ${usuarios[i]['cantidad-apostada']}');
-
                   usuarios[i]['goles-local'] = int.parse(golesLocal);
                   usuarios[i]['goles-visitante'] = int.parse(golesVisitante);
                   usuarios[i]['cantidad-apostada'] = int.parse(cantidad);
@@ -527,13 +562,6 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                     print('Error al actualizar la apuesta: $error');
                   });
 
-                  // Mostrar los nuevos valores actualizados
-                  print('Nuevos valores después de la actualización:');
-                  print('Nombre: ${usuarios[i]['nombre']}');
-                  print('Goles local: ${usuarios[i]['goles-local']}');
-                  print('Goles visitante: ${usuarios[i]['goles-visitante']}');
-                  print('Cantidad apostada: ${usuarios[i]['cantidad-apostada']}');
-                  
                   // Agregar la cantidad apostada al campo 'bote' del documento
                   int actualBote = apuestaDoc['bote'] ?? 0;
                   int cantidadApostada = int.parse(cantidad);
@@ -543,6 +571,26 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                   }).catchError((error) {
                     print('Error al actualizar el bote: $error');
                   });
+
+                  // Descontar los betCoins del usuario
+                  final int nuevoSaldo = usersSnapshot.docs.first.data()['betCoins'] - cantidadApostada;
+                  if (nuevoSaldo >= 0) {
+                    usersSnapshot.docs.first.reference.update({'betCoins': nuevoSaldo}).then((_) {
+                      print('betCoins actualizados exitosamente para el usuario $usuarioActualNombre');
+                    }).catchError((error) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Error al actualizar los betCoins del usuario: $error'),
+                        backgroundColor: Colors.red,
+                      ));
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('El usuario no tiene suficientes betCoins para realizar esta apuesta.'),
+                      backgroundColor: Colors.red,
+                    ));
+                  }
+
+
                   return;
                 }
               }
@@ -566,11 +614,41 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
 
 
 
+
   void _crearNuevaApuesta() async {
-    if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
-      try {
-        // Buscar el documento del grupo seleccionado
-        final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
+  if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
+    try {
+      // Verificar si ya existe una apuesta con el mismo nombre en el grupo seleccionado
+      final existingApuestasSnapshot = await FirebaseFirestore.instance.collection('apuestas')
+          .where('nombre', isEqualTo: _nombreApuestaController.text)
+          .where('grupo', isEqualTo: selectedGroup)
+          .limit(1)
+          .get();
+
+      if (existingApuestasSnapshot.docs.isNotEmpty) {
+        // Si ya existe una apuesta con el mismo nombre en el grupo, mostrar un mensaje de error
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Error'),
+              content: const Text('Ya existe una apuesta con el mismo nombre en el grupo seleccionado.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+        return;
+      }
+
+      // Continuar con la creación de la nueva apuesta si no existe una con el mismo nombre
+      final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
 
       if (groupSnapshot.docs.isNotEmpty) {
         final groupDoc = groupSnapshot.docs.first;
@@ -578,45 +656,41 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
         final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
           return {
             'nombre': member,
-            'goles-local': null,
-            'goles-visitante': null,
-            'cantidad-apostada': null,
+            'goles-local': 0,
+            'goles-visitante': 0,
+            'cantidad-apostada': 0,
           };
         }).toList();
 
-          // Mostrar los usuarios del grupo por consola
-          print('Usuarios del grupo $selectedGroup:');
-          usuariosConApuestas.forEach((usuario) {
-            print(usuario);
-          });
+        final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
+          'bote': 0,
+          'equipo_local': selectedMatch!.split(' vs ')[0],
+          'equipo_visitante': selectedMatch!.split(' vs ')[1],
+          'nombre': _nombreApuestaController.text,
+          'grupo': selectedGroup,
+          'usuarios': usuariosConApuestas,
+        });
 
-          // Crear la nueva apuesta
-          final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
-            'bote': 0,
-            'equipo_local': selectedMatch!.split(' vs ')[0],
-            'equipo_visitante': selectedMatch!.split(' vs ')[1],
-            'nombre': _nombreApuestaController.text,
-            'grupo': selectedGroup,
-            'usuarios': usuariosConApuestas, // Guardar los usuarios del grupo con sus apuestas
-          });
+        setState(() {
+          final nuevaApuesta = '${_nombreApuestaController.text}';
+          apuestas.add(nuevaApuesta);
+          // Limpiar las variables y los campos de texto
+          _nombreApuestaController.clear();
+          selectedGroup = null;
+          selectedLeague = null;
+          selectedMatch = null;
+        });
 
-          setState(() {
-            final nuevaApuesta =
-                '${_nombreApuestaController.text}';
-            apuestas.add(nuevaApuesta);
-          });
-
-          // Mostrar mensaje de éxito o realizar otras acciones si es necesario
-          print('Apuesta creada exitosamente');
-        } else {
-          print('No se encontró el grupo $selectedGroup en la base de datos');
-        }
-      } catch (error) {
-        // Manejar errores si la creación de la apuesta falla
-        print('Error al crear la apuesta: $error');
+        print('Apuesta creada exitosamente');
+      } else {
+        print('No se encontró el grupo $selectedGroup en la base de datos');
       }
+    } catch (error) {
+      print('Error al crear la apuesta: $error');
     }
   }
+}
+
 
 }
 
