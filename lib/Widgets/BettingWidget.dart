@@ -91,12 +91,13 @@ class _BettingWidgetState extends State<BettingWidget> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Apuestas Virtuales'),
-        backgroundColor: Colors.indigo, 
+        backgroundColor: Colors.indigo,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -105,7 +106,7 @@ class _BettingWidgetState extends State<BettingWidget> {
           children: [
             const Text(
               '¡Crea tu Apuesta!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo), 
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -120,7 +121,7 @@ class _BettingWidgetState extends State<BettingWidget> {
               },
               child: const Text('Crear Apuesta', style: TextStyle(fontSize: 18)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo, 
+                backgroundColor: Colors.indigo,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -130,7 +131,7 @@ class _BettingWidgetState extends State<BettingWidget> {
             const SizedBox(height: 20),
             const Text(
               'Apuestas Recientes',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo), 
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
@@ -159,6 +160,7 @@ class _BettingWidgetState extends State<BettingWidget> {
       ),
     );
   }
+
 
   Widget _mostrarSeleccionApuesta(BuildContext context) {
   return StatefulBuilder(
@@ -747,9 +749,21 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
         margin: const EdgeInsets.symmetric(vertical: 5),
         child: Padding(
           padding: const EdgeInsets.all(10),
-          child: Text(
-            widget.nombreApuesta,
-            style: const TextStyle(fontSize: 16, color: Colors.indigo),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.nombreApuesta,
+                style: const TextStyle(fontSize: 16, color: Colors.indigo),
+              ),
+              IconButton(
+                icon: Icon(Icons.emoji_events, color: Colors.indigo),
+                onPressed: () {
+                  // Aquí puedes definir la acción del botón
+                  print('Trofeo pulsado: ${widget.nombreApuesta}');
+                },
+              ),
+            ],
           ),
         ),
       ),
