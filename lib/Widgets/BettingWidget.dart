@@ -331,100 +331,159 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
     backgroundColor: Colors.white,
     elevation: 0.0,
     child: SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.all(20.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextFormField(
-            controller: _golesLocalController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Goles Locales',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+          Text(
+            'Introduce tu apuesta',
+            style: TextStyle(
+              fontSize: 20.0,
+              fontWeight: FontWeight.bold,
+              color: Colors.indigo,
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor, introduce una cantidad';
-              }
-              if (int.tryParse(value) == null) {
-                return 'Por favor, introduce un número válido';
-              }
-              return null;
-            },
           ),
-          SizedBox(height: 10),
-          TextFormField(
-            controller: _golesVisitanteController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Goles Visitantes',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+          SizedBox(height: 20.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: Icon(Icons.remove),
+                onPressed: () => _decrementGoles(_golesLocalController),
               ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor, introduce una cantidad';
-              }
-              if (int.tryParse(value) == null) {
-                return 'Por favor, introduce un número válido';
-              }
-              return null;
-            },
+              Expanded(
+                child: TextField(
+                  controller: _golesLocalController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18.0),
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: 'Goles Locales',
+                    labelStyle: TextStyle(color: Colors.indigo),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () => _incrementGoles(_golesLocalController),
+              ),
+            ],
           ),
-          SizedBox(height: 10),
-          TextFormField(
-            controller: _cantidadController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Cantidad Apostada',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+          SizedBox(height: 10.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: Icon(Icons.remove),
+                onPressed: () => _decrementGoles(_golesVisitanteController),
               ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor, introduce una cantidad';
-              }
-              if (int.tryParse(value) == null) {
-                return 'Por favor, introduce un número válido';
-              }
-              int cantidad = int.tryParse(value)!;
-              if (cantidad < apuestaMinima || cantidad > apuestaMaxima) {
-                return 'La cantidad debe estar entre $apuestaMinima y $apuestaMaxima';
-              }
-              return null;
-            },
+              Expanded(
+                child: TextField(
+                  controller: _golesVisitanteController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18.0),
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: 'Goles Visitantes',
+                    labelStyle: TextStyle(color: Colors.indigo),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () => _incrementGoles(_golesVisitanteController),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: Icon(Icons.remove),
+                onPressed: _decrementCantidad,
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _cantidadController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18.0),
+                  enabled: false,
+                  decoration: InputDecoration(
+                    labelText: 'Cantidad Apostada',
+                    labelStyle: TextStyle(color: Colors.indigo),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: _incrementCantidad,
+              ),
+            ],
+          ),
+          SizedBox(height: 20.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Cancelar',
+                  style: TextStyle(
+                    color: Colors.indigo,
+                    fontSize: 16.0,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 20.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  backgroundColor: Colors.grey[200],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _guardarApuesta(
+                    index,
+                    _golesLocalController.text,
+                    _golesVisitanteController.text,
+                    _cantidadController.text,
+                  );
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  'Apostar',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 20.0), backgroundColor: Colors.indigo,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     ),
-    actions: <Widget>[
-      TextButton(
-        onPressed: () {
-          Navigator.of(context).pop();
-        },
-        child: Text('Cancelar'),
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.indigo,
-        ),
-      ),
-      ElevatedButton(
-        onPressed: () {
-            _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
-          Navigator.of(context).pop();
-        },
-        child: Text('Apostar', style: TextStyle(fontSize: 16)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.indigo,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-    ],
   );
 }
 
