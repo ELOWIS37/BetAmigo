@@ -616,32 +616,29 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
 }
 
 
-
-
   void _crearNuevaApuesta() async {
   if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
     try {
-      // Verificar si ya existe una apuesta con el mismo nombre en el grupo seleccionado
+      // Verificar si ya existe una apuesta con el mismo nombre en cualquier grupo
       final existingApuestasSnapshot = await FirebaseFirestore.instance.collection('apuestas')
           .where('nombre', isEqualTo: _nombreApuestaController.text)
-          .where('grupo', isEqualTo: selectedGroup)
           .limit(1)
           .get();
 
       if (existingApuestasSnapshot.docs.isNotEmpty) {
-        // Si ya existe una apuesta con el mismo nombre en el grupo, mostrar un mensaje de error
+        // Si ya existe una apuesta con el mismo nombre en cualquier grupo, mostrar un mensaje de error
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text('Error'),
-              content: const Text('Ya existe una apuesta con el mismo nombre en el grupo seleccionado.'),
+              content: const Text('Ya existe una apuesta con el mismo nombre.'),
               actions: [
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: Text('OK'),
+                  child: const Text('OK'),
                 ),
               ],
             );
@@ -693,8 +690,8 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
       print('Error al crear la apuesta: $error');
     }
   }
-  
 }
+
 
 
 }
