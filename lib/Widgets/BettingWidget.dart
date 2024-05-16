@@ -462,64 +462,77 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
   }
 }
 
-
-
   void _crearNuevaApuesta() async {
-    if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
-      try {
-        // Buscar el documento del grupo seleccionado
-        final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
+  if (_nombreApuestaController.text.isNotEmpty && selectedGroup != null && selectedLeague != null && selectedMatch != null) {
+    try {
+      // Verificar si ya existe una apuesta con el mismo nombre en el grupo seleccionado
+      final existingApuestasSnapshot = await FirebaseFirestore.instance.collection('apuestas')
+          .where('nombre', isEqualTo: _nombreApuestaController.text)
+          .where('grupo', isEqualTo: selectedGroup)
+          .limit(1)
+          .get();
 
-        if (groupSnapshot.docs.isNotEmpty) {
-          // Obtener el documento del grupo
-          final groupDoc = groupSnapshot.docs.first;
-
-          // Obtener los usuarios del grupo
-          final List<dynamic> members = groupDoc.data()?['miembros'];
-
-          // Crear la lista de usuarios con sus apuestas
-          final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
-            return {
-              'nombre': member,
-              'goles-local': null,
-              'goles-visitante': null,
-              'cantidad-apostada': null,
-            };
-          }).toList();
-
-          // Mostrar los usuarios del grupo por consola
-          print('Usuarios del grupo $selectedGroup:');
-          usuariosConApuestas.forEach((usuario) {
-            print(usuario);
-          });
-
-          // Crear la nueva apuesta
-          final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
-            'bote': 0,
-            'equipo_local': selectedMatch!.split(' vs ')[0],
-            'equipo_visitante': selectedMatch!.split(' vs ')[1],
-            'nombre': _nombreApuestaController.text,
-            'grupo': selectedGroup,
-            'usuarios': usuariosConApuestas, // Guardar los usuarios del grupo con sus apuestas
-          });
-
-          setState(() {
-            final nuevaApuesta =
-                '${_nombreApuestaController.text}';
-            apuestas.add(nuevaApuesta);
-          });
-
-          // Mostrar mensaje de éxito o realizar otras acciones si es necesario
-          print('Apuesta creada exitosamente');
-        } else {
-          print('No se encontró el grupo $selectedGroup en la base de datos');
-        }
-      } catch (error) {
-        // Manejar errores si la creación de la apuesta falla
-        print('Error al crear la apuesta: $error');
+      if (existingApuestasSnapshot.docs.isNotEmpty) {
+        // Si ya existe una apuesta con el mismo nombre en el grupo, mostrar un mensaje de error
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('Ya existe una apuesta con el mismo nombre en el grupo seleccionado.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+        return;
       }
+
+      // Continuar con la creación de la nueva apuesta si no existe una con el mismo nombre
+      final groupSnapshot = await FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: selectedGroup).limit(1).get();
+
+      if (groupSnapshot.docs.isNotEmpty) {
+        final groupDoc = groupSnapshot.docs.first;
+        final List<dynamic> members = groupDoc.data()?['miembros'];
+        final List<Map<String, dynamic>> usuariosConApuestas = members.map((member) {
+          return {
+            'nombre': member,
+            'goles-local': null,
+            'goles-visitante': null,
+            'cantidad-apostada': null,
+          };
+        }).toList();
+
+        final nuevaApuestaRef = await FirebaseFirestore.instance.collection('apuestas').add({
+          'bote': 0,
+          'equipo_local': selectedMatch!.split(' vs ')[0],
+          'equipo_visitante': selectedMatch!.split(' vs ')[1],
+          'nombre': _nombreApuestaController.text,
+          'grupo': selectedGroup,
+          'usuarios': usuariosConApuestas,
+        });
+
+        setState(() {
+          final nuevaApuesta = '${_nombreApuestaController.text}';
+          apuestas.add(nuevaApuesta);
+        });
+
+        print('Apuesta creada exitosamente');
+      } else {
+        print('No se encontró el grupo $selectedGroup en la base de datos');
+      }
+    } catch (error) {
+      print('Error al crear la apuesta: $error');
     }
   }
+}
+
 
 }
 
@@ -573,12 +586,12 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
       position: _animationOffsetIn,
       child: Card(
         elevation: 3,
-        margin: EdgeInsets.symmetric(vertical: 5),
+        margin: const EdgeInsets.symmetric(vertical: 5),
         child: Padding(
-          padding: EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
           child: Text(
             widget.nombreApuesta,
-            style: TextStyle(fontSize: 16, color: Colors.indigo),
+            style: const TextStyle(fontSize: 16, color: Colors.indigo),
           ),
         ),
       ),
