@@ -194,7 +194,11 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
               });
             },
             child: GestureDetector(
-              onTap: () => _showConfirmationDialog(context), // Llama al método _showConfirmationDialog al hacer clic en el escudo
+              onTap: () {
+                if (!_isPurchased) {
+                  _showConfirmationDialog(context); // Llama al método solo si el artículo no ha sido comprado
+                }
+              },
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -261,6 +265,7 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
       ),
     );
   }
+
 
 
 
