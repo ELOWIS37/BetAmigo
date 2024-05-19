@@ -176,7 +176,6 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -194,31 +193,66 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
                 _isHovering = false;
               });
             },
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
-                  transform: Matrix4.identity()..scale(_isHovering ? 1.1 : 1.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3.0,
+            child: GestureDetector(
+              onTap: () => _showConfirmationDialog(context), // Llama al método _showConfirmationDialog al hacer clic en el escudo
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    transform: Matrix4.identity()..scale(_isHovering ? 1.1 : 1.0),
+                    decoration: BoxDecoration(
+                      color: _getBackgroundColor(_getBadgePrice(widget.badgeId)), // Cambia el fondo según el precio
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 3.0,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Image.asset(
+                            "../../assets/imagenTeam/team${widget.badgeId}.png",
+                            fit: BoxFit.contain,
+                            width: MediaQuery.of(context).size.width * 0.25,
+                            height: MediaQuery.of(context).size.width * 0.25,
+                          ),
+                          if (_isHovering) ...[
+                            Positioned(
+                              bottom: 8,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      _getBadgePrice(widget.badgeId).toString(),
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Image.asset(
+                                      "assets/coin.png",
+                                      width: 16,
+                                      height: 16,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      "../../assets/imagenTeam/team${widget.badgeId}.png",
-                      fit: BoxFit.contain,
-                      width: MediaQuery.of(context).size.width * 0.25,
-                      height: MediaQuery.of(context).size.width * 0.25, // Ajustar la altura para mantener la proporción
-                    ),
-                  ),
-                ),
-                _isPurchased ? _buildPurchasedOverlay() : SizedBox(),
-              ],
+                  _isPurchased ? _buildPurchasedOverlay() : SizedBox(),
+                ],
+              ),
             ),
           ),
           SizedBox(height: 8.0),
@@ -227,6 +261,8 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
       ),
     );
   }
+
+
 
   Widget _buildPurchasedOverlay() {
     return Positioned(
@@ -282,9 +318,10 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
 
   Widget _buildBuyButton() {
     return ElevatedButton(
-      onPressed: () => _buyItem(widget.badgeId),
+      onPressed: () => _showConfirmationDialog(context),
       style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white, backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.blue,
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -297,18 +334,114 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _showConfirmationDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // No permite cerrar el dialogo al tocar fuera
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmar compra'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('¿Estás seguro de que deseas comprar este artículo por ${_getBadgePrice(widget.badgeId)} BetCoins?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el dialogo sin hacer nada
+              },
+            ),
+            TextButton(
+              child: Text('Comprar'),
+              onPressed: () {
+                _buyItem(widget.badgeId); // Realiza la compra
+                Navigator.of(context).pop(); // Cierra el dialogo
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _buyItem(int itemId) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-        'purchasedBadges': FieldValue.arrayUnion([itemId]),
-      });
-      setState(() {
-        _isPurchased = true;
-      });
-      _animationController.forward(from: 0);
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      int betCoins = userDoc.get('betCoins') ?? 0;
+      int itemPrice = _getBadgePrice(itemId);
+      if (betCoins >= itemPrice) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'purchasedBadges': FieldValue.arrayUnion([itemId]),
+          'betCoins': betCoins - itemPrice,
+        });
+        setState(() {
+          _isPurchased = true;
+        });
+        _animationController.forward(from: 0);
+      } else {
+        // Mostrar un mensaje de que no hay suficientes BetCoins
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No tienes suficientes BetCoins para comprar este artículo.'),
+          ),
+        );
+      }
     }
   }
+
+  int _getBadgePrice(int badgeId) {
+  // Definimos los precios para cada ID de escudo
+  Map<int, int> badgePrices = {
+    1: 500,
+    2: 150,
+    3: 300,
+    4: 150,
+    5: 500,
+    6: 300,
+    7: 150,
+    8: 500,
+    9: 150,
+    10: 500,
+    11: 300,
+    12: 100,
+    13: 500,
+    14: 100,
+    15: 150,
+    16: 100,
+    17: 300,
+    18: 100,
+    19: 300,
+    20: 100,
+    21: 800,
+    22: 800,
+    23: 800
+  };
+
+  // Retornamos el precio correspondiente al ID del escudo
+  return badgePrices[badgeId] ?? 0; // Devolvemos 0 si no hay precio definido para el ID
+}
+
+Color _getBackgroundColor(int price) {
+  if (price == 100) {
+    return Color.fromARGB(255, 134, 86, 42); // Cambia este color según tus preferencias
+  } else if (price == 150) {
+    return Color.fromARGB(255, 76, 234, 58); // Cambia este color según tus preferencias
+  } else if (price == 300) {
+    return Color.fromARGB(255, 129, 11, 179); // Cambia este color según tus preferencias
+  } else if (price == 500) {
+    return Color.fromARGB(255, 179, 11, 59); // Cambia este color según tus preferencias
+  } else if (price == 800) {
+    return Color.fromARGB(255, 238, 219, 9); // Cambia este color según tus preferencias
+  }else {
+    return Colors.grey; // Color por defecto si no hay coincidencia
+  }
+}
+
 
   @override
   void dispose() {
@@ -316,3 +449,4 @@ class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
     super.dispose();
   }
 }
+

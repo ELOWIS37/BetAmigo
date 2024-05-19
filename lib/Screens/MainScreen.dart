@@ -71,7 +71,10 @@ class _MainScreenState extends State<MainScreen> {
     'team17',
     'team18',
     'team19',
-    'team20'
+    'team20',
+    'team21',
+    'team22',
+    'team23'
   ];
 
   static final List<Widget> _widgetOptions = <Widget>[
