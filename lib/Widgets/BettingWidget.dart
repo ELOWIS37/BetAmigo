@@ -670,6 +670,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
           'nombre': _nombreApuestaController.text,
           'grupo': selectedGroup,
           'usuarios': usuariosConApuestas,
+          'league_code': leagueCodes[selectedLeague!], // Añadir el código de la liga
         });
 
         setState(() {
@@ -691,6 +692,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
     }
   }
 }
+
 
 
 
