@@ -249,6 +249,7 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
           'id': userCredential.user!.uid,
           'profileImageid': 'assets/imagenuser/usuario7.png',
           'betCoins': 50, // Establecer el valor inicial de betCoins en 50
+          'purchasedBadges': [5, 13], // Añadir por defecto las IDs de los escudos 5 y 13
         });
 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

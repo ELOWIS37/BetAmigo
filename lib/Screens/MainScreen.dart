@@ -484,9 +484,10 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                             color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
                                             width: 4,
                                           ),
+                                          // Aquí cambia la ruta de la imagen
                                           image: DecorationImage(
                                             image: AssetImage('imagenTeam/$imageId.png'),
-                                            fit: BoxFit.cover,
+                                            fit: BoxFit.contain, // Ajusta la imagen para que se vea completamente dentro del contenedor
                                           ),
                                         ),
                                       ),
@@ -501,6 +502,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                     ],
                                   ),
                                 );
+
                               }).toList(),
                       ),
                     ),
