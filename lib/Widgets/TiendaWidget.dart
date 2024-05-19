@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -14,7 +16,7 @@ class TiendaWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // title: Text('Tienda Diaria'),
+        title: Text('Tienda Diaria'),
       ),
       body: DailyShop(),
     );
@@ -27,34 +29,55 @@ class DailyShop extends StatefulWidget {
 }
 
 class _DailyShopState extends State<DailyShop> {
-  List<int> _imageIds = [];
-  late Timer _timer;
+  List<int> _badgeIds = [];
   late DateTime _lastUpdate;
 
   @override
   void initState() {
     super.initState();
     _lastUpdate = DateTime.now();
-    _populateImageIds();
-    _timer = Timer.periodic(Duration(minutes: 1), (timer) {
-      if (DateTime.now().difference(_lastUpdate).inHours >= 24) {
-        setState(() {
-          _populateImageIds();
-          _lastUpdate = DateTime.now();
-        });
+    _populateBadgeIds();
+  }
+
+  void _populateBadgeIds() {
+    FirebaseFirestore.instance.collection('dailyItems').doc('today').get().then((snapshot) {
+      if (snapshot.exists) {
+        DateTime lastUpdate = (snapshot.data() as dynamic)['lastUpdate'].toDate();
+        if (DateTime.now().difference(lastUpdate).inHours >= 24) {
+          _generateNewItems();
+        } else {
+          setState(() {
+            _badgeIds = List<int>.from((snapshot.data() as dynamic)['items']);
+          });
+        }
+      } else {
+        _generateNewItems();
       }
+    }).catchError((error) {
+      print('Error fetching daily items: $error');
     });
   }
 
-  void _populateImageIds() {
+  void _generateNewItems() {
     Random random = Random();
-    _imageIds.clear();
-    while (_imageIds.length < 3) {
-      int imagenId = random.nextInt(20) + 1;
-      if (!_imageIds.contains(imagenId)) {
-        _imageIds.add(imagenId);
+    _badgeIds.clear();
+    while (_badgeIds.length < 3) {
+      int badgeId = random.nextInt(20) + 1;
+      if (!_badgeIds.contains(badgeId)) {
+        _badgeIds.add(badgeId);
       }
     }
+    _saveDailyItems();
+  }
+
+  Future<void> _saveDailyItems() async {
+    await FirebaseFirestore.instance.collection('dailyItems').doc('today').set({
+      'items': _badgeIds,
+      'lastUpdate': DateTime.now(),
+    });
+    setState(() {
+      _lastUpdate = DateTime.now();
+    });
   }
 
   @override
@@ -84,15 +107,15 @@ class _DailyShopState extends State<DailyShop> {
                 children: [
                   Image.asset(
                     "../../assets/fondoTiendaDiaria/tituloTienda.png",
-                    width: MediaQuery.of(context).size.width * 0.7, // Ancho de la imagen
-                    height: MediaQuery.of(context).size.height * 0.3, // Alto de la imagen
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    height: MediaQuery.of(context).size.height * 0.3,
                   ),
-                  SizedBox(height: 40), // Espacio entre el título y las imágenes
+                  SizedBox(height: 40),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _imageIds
+                    children: _badgeIds
                         .map(
-                          (imagenId) => ImageItem(imagenId: imagenId),
+                          (badgeId) => BadgeItem(badgeId: badgeId),
                         )
                         .toList(),
                   ),
@@ -104,31 +127,19 @@ class _DailyShopState extends State<DailyShop> {
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
 }
 
-class ImageItem extends StatefulWidget {
-  final int imagenId;
+class BadgeItem extends StatefulWidget {
+  final int badgeId;
 
-  const ImageItem({Key? key, required this.imagenId}) : super(key: key);
+  const BadgeItem({Key? key, required this.badgeId}) : super(key: key);
 
   @override
-  _ImageItemState createState() => _ImageItemState();
+  _BadgeItemState createState() => _BadgeItemState();
 }
 
-class _ImageItemState extends State<ImageItem> {
-  late bool _isHovering;
-
-  @override
-  void initState() {
-    super.initState();
-    _isHovering = false;
-  }
+class _BadgeItemState extends State<BadgeItem> {
+  bool _isHovering = false;
 
   @override
   Widget build(BuildContext context) {
@@ -153,8 +164,7 @@ class _ImageItemState extends State<ImageItem> {
               children: [
                 AnimatedContainer(
                   duration: Duration(milliseconds: 300),
-                  transform: Matrix4.identity()
-                    ..scale(_isHovering ? 1.1 : 1.0),
+                  transform: Matrix4.identity()..scale(_isHovering ? 1.1 : 1.0),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
@@ -165,8 +175,8 @@ class _ImageItemState extends State<ImageItem> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
-                      "../../assets/imagenTeam/team${widget.imagenId}.png",
-                      fit: BoxFit.cover,
+                      "../../assets/imagenTeam/team${widget.badgeId}.png",
+                      fit: BoxFit.contain,
                       width: MediaQuery.of(context).size.width / 4.0,
                       height: MediaQuery.of(context).size.height / 3.0,
                     ),
@@ -177,13 +187,20 @@ class _ImageItemState extends State<ImageItem> {
           ),
           SizedBox(height: 30),
           ElevatedButton(
-            onPressed: () {
-              // Acción cuando se presiona el botón de comprar
-            },
+            onPressed: () => _buyItem(widget.badgeId),
             child: Text('Comprar'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _buyItem(int itemId) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'purchasedBadges': FieldValue.arrayUnion([itemId]),
+      });
+    }
   }
 }

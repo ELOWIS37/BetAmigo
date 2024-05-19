@@ -297,14 +297,26 @@ Future<void> _showProfileDialog(BuildContext context) async {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     String username = userData.get('user');
     String email = userData.get('email');
-    String profileImageId = userData.get('profileImageid'); // Obtener la URL de la imagen de perfil
-    int betCoins = userData.get('betCoins'); // Obtener el número de BetCoins
+    String profileImageId = userData.get('profileImageid');
+    int betCoins = userData.get('betCoins');
+
+    List<bool> shieldPurchases = List.generate(_imageTeamIds.length, (index) => false);
+    
+    if (userData.exists) {
+      List<dynamic> purchasedBadges = userData.get('purchasedBadges') ?? [];
+      purchasedBadges.forEach((badgeId) {
+        int index = _imageTeamIds.indexOf('team${badgeId.toString()}');
+        if (index != -1) {
+          shieldPurchases[index] = true;
+        }
+      });
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         String selectedImageId = _profileImageId;
-        String selectedTab = 'CHARACTERS'; // Por defecto, mostrar la pestaña de personajes
+        String selectedTab = 'CHARACTERS';
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
@@ -313,14 +325,13 @@ Future<void> _showProfileDialog(BuildContext context) async {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Contenido del perfil (nombre de usuario, email, imagen de perfil, y BetCoins)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.transparent,
-                        backgroundImage: profileImageId.isNotEmpty ? NetworkImage(profileImageId) : null, // Mostrar la imagen de perfil almacenada en Firebase
+                        backgroundImage: profileImageId.isNotEmpty ? NetworkImage(profileImageId) : null,
                       ),
                       SizedBox(width: 16),
                       Column(
@@ -352,7 +363,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
                           SizedBox(height: 8),
                           Row(
                             children: [
-                              Image.asset('assets/coin.png', width: 24, height: 24), // Icono de BetCoins
+                              Image.asset('assets/coin.png', width: 24, height: 24),
                               SizedBox(width: 8),
                               const Text(
                                 'BetCoins: ',
@@ -362,7 +373,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                 ),
                               ),
                               Text(
-                                '$betCoins', // Mostrar el número de BetCoins
+                                '$betCoins',
                                 style: TextStyle(fontSize: 16),
                               ),
                             ],
@@ -372,7 +383,6 @@ Future<void> _showProfileDialog(BuildContext context) async {
                     ],
                   ),
                   SizedBox(height: 16),
-                  // Selector de pestañas para personajes y equipos
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -413,7 +423,6 @@ Future<void> _showProfileDialog(BuildContext context) async {
                     ],
                   ),
                   SizedBox(height: 16),
-                  // Imágenes según la pestaña seleccionada
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.vertical,
@@ -427,7 +436,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                     setState(() {
                                       selectedImageId = imageId;
                                     });
-                                    _pickAndSetImage(imageId, 'user'); // Actualiza la imagen de perfil cuando se selecciona una imagen
+                                    _pickAndSetImage(imageId, 'user');
                                   },
                                   child: Container(
                                     width: 100,
@@ -446,28 +455,50 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                   ),
                                 );
                               }).toList()
-                            : _imageTeamIds.map((imageId) {
+                            : _imageTeamIds.asMap().entries.map((entry) {
+                                int index = entry.key;
+                                String imageId = entry.value;
+                                bool isPurchased = shieldPurchases[index];
                                 return GestureDetector(
                                   onTap: () {
                                     setState(() {
                                       selectedImageId = imageId;
                                     });
-                                    _pickAndSetImage(imageId, 'team'); // Actualiza la imagen de perfil cuando se selecciona una imagen
+                                    if (isPurchased) {
+                                      _pickAndSetImage(imageId, 'team');
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                        content: Text('¡Debes comprar este escudo antes de seleccionarlo!'),
+                                      ));
+                                    }
                                   },
-                                  child: Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(50),
-                                      border: Border.all(
-                                        color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
-                                        width: 4,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(50),
+                                          border: Border.all(
+                                            color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
+                                            width: 4,
+                                          ),
+                                          image: DecorationImage(
+                                            image: AssetImage('imagenTeam/$imageId.png'),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
-                                      image: DecorationImage(
-                                        image: AssetImage('imagenTeam/$imageId.png'),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
+                                      if (!isPurchased)
+                                        Positioned.fill(
+                                          child: Icon(
+                                            Icons.lock,
+                                            color: Colors.grey[600],
+                                            size: 40,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 );
                               }).toList(),
@@ -500,6 +531,7 @@ Future<void> _showProfileDialog(BuildContext context) async {
     );
   }
 }
+
 
 
 

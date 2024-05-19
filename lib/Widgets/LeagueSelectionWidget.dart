@@ -12,10 +12,10 @@ class LeagueSelectionWidget extends StatelessWidget {
       ),
       body: Center(
         child: GridView.count(
-          crossAxisCount: 2, // Dos columnas en dispositivos móviles, más en tabletas y escritorio
-          mainAxisSpacing: 20.0, // Espacio vertical entre las imágenes
-          crossAxisSpacing: 20.0, // Espacio horizontal entre las imágenes
-          padding: EdgeInsets.all(20.0), // Espacio alrededor del GridView
+          crossAxisCount: 2,
+          mainAxisSpacing: 20.0,
+          crossAxisSpacing: 20.0,
+          padding: EdgeInsets.all(20.0),
           children: [
             GestureDetector(
               onTap: () {
@@ -27,11 +27,13 @@ class LeagueSelectionWidget extends StatelessWidget {
                 );
               },
               child: Card(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   child: Image.asset(
                     'assets/bundesliga.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -46,11 +48,13 @@ class LeagueSelectionWidget extends StatelessWidget {
                 );
               },
               child: Card(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   child: Image.asset(
                     'assets/laliga.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -65,11 +69,13 @@ class LeagueSelectionWidget extends StatelessWidget {
                 );
               },
               child: Card(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   child: Image.asset(
                     'assets/pl.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -84,11 +90,13 @@ class LeagueSelectionWidget extends StatelessWidget {
                 );
               },
               child: Card(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   child: Image.asset(
                     'assets/ligue1.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -103,11 +111,13 @@ class LeagueSelectionWidget extends StatelessWidget {
                 );
               },
               child: Card(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   child: Image.asset(
                     'assets/seria.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -122,11 +132,13 @@ class LeagueSelectionWidget extends StatelessWidget {
                 );
               },
               child: Card(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0), // Ajusta el radio según tu preferencia
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                   child: Image.asset(
                     'assets/champions.png',
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
