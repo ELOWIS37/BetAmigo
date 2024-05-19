@@ -98,30 +98,38 @@ class _DailyShopState extends State<DailyShop> {
               child: Container(),
             ),
           ),
-          Center(
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    "../../assets/fondoTiendaDiaria/tituloTienda.png",
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    height: MediaQuery.of(context).size.height * 0.3,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: Center(
+                  child: Container(
+                    width: constraints.maxWidth,
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(height: 20), // Añadido para empujar todo hacia arriba
+                        Image.asset(
+                          "../../assets/fondoTiendaDiaria/tituloTienda.png",
+                          width: constraints.maxWidth * 0.7,
+                          height: constraints.maxHeight * 0.25,
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: _badgeIds
+                              .map(
+                                (badgeId) => Flexible(child: BadgeItem(badgeId: badgeId)),
+                              )
+                              .toList(),
+                        ),
+                        SizedBox(height: 20), // Añadido para evitar el desbordamiento inferior
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _badgeIds
-                        .map(
-                          (badgeId) => BadgeItem(badgeId: badgeId),
-                        )
-                        .toList(),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -138,15 +146,42 @@ class BadgeItem extends StatefulWidget {
   _BadgeItemState createState() => _BadgeItemState();
 }
 
-class _BadgeItemState extends State<BadgeItem> {
+class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
   bool _isHovering = false;
+  bool _isPurchased = false;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfPurchased();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _checkIfPurchased() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      List<dynamic> purchasedBadges = userDoc.get('purchasedBadges');
+      setState(() {
+        _isPurchased = purchasedBadges.contains(widget.badgeId);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           MouseRegion(
             onEnter: (_) {
@@ -177,20 +212,87 @@ class _BadgeItemState extends State<BadgeItem> {
                     child: Image.asset(
                       "../../assets/imagenTeam/team${widget.badgeId}.png",
                       fit: BoxFit.contain,
-                      width: MediaQuery.of(context).size.width / 4.0,
-                      height: MediaQuery.of(context).size.height / 3.0,
+                      width: MediaQuery.of(context).size.width * 0.25,
+                      height: MediaQuery.of(context).size.width * 0.25, // Ajustar la altura para mantener la proporción
                     ),
                   ),
                 ),
+                _isPurchased ? _buildPurchasedOverlay() : SizedBox(),
               ],
             ),
           ),
-          SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () => _buyItem(widget.badgeId),
-            child: Text('Comprar'),
-          ),
+          SizedBox(height: 8.0),
+          _isPurchased ? _buildPurchasedLabel(context) : _buildBuyButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPurchasedOverlay() {
+    return Positioned(
+      top: 10,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(
+            Icons.check_circle,
+            color: Colors.green,
+            size: 30,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurchasedLabel(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    return ScaleTransition(
+      scale: _animation,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              if (screenWidth >= 525) ...[
+                SizedBox(width: 8),
+                Text(
+                  '¡COMPRADO!',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBuyButton() {
+    return ElevatedButton(
+      onPressed: () => _buyItem(widget.badgeId),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.white, backgroundColor: Colors.blue,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      child: Text(
+        'Comprar',
+        style: TextStyle(fontSize: 16),
       ),
     );
   }
@@ -201,6 +303,16 @@ class _BadgeItemState extends State<BadgeItem> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'purchasedBadges': FieldValue.arrayUnion([itemId]),
       });
+      setState(() {
+        _isPurchased = true;
+      });
+      _animationController.forward(from: 0);
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 }
