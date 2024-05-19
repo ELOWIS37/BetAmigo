@@ -521,62 +521,6 @@ void _mostrarDetalleAmigo(String amigo) {
   );
 }
 
-
-  // void _mostrarDetalleAmigo(String amigo) {
-  //   FirebaseFirestore.instance.collection('users')
-  //       .where('user', isEqualTo: amigo)
-  //       .get()
-  //       .then((QuerySnapshot querySnapshot) {
-  //     if (querySnapshot.docs.isNotEmpty) {
-  //       var userData = querySnapshot.docs.first.data() as Map<String, dynamic>?;
-
-  //       if (userData != null && userData.containsKey('profileImageid')) {
-  //         showDialog(
-  //           context: context,
-  //           builder: (BuildContext context) {
-  //             return AlertDialog(
-  //               title: Text('Detalles de Amigo'),
-  //               content: Column(
-  //                 mainAxisSize: MainAxisSize.min,
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: <Widget>[
-  //                   Text('Nombre: $amigo'),
-  //                   SizedBox(height: 10),
-  //                   Image.network(
-  //                     userData['profileImageid'],
-  //                     width: 100,
-  //                     height: 100,
-  //                     fit: BoxFit.cover,
-  //                   ),
-  //                 ],
-  //               ),
-  //               actions: <Widget>[
-  //                 TextButton(
-  //                   onPressed: () {
-  //                     _eliminarAmigo(amigo);
-  //                     Navigator.of(context).pop();
-  //                   },
-  //                   child: Text('Eliminar'),
-  //                 ),
-  //                 TextButton(
-  //                   onPressed: () {
-  //                     Navigator.of(context).pop();
-  //                   },
-  //                   child: Text('Cerrar'),
-  //                 ),
-  //               ],
-  //             );
-  //           },
-  //         );
-  //       } else {
-  //         _mostrarError('El usuario no tiene una imagen de perfil.');
-  //       }
-  //     } else {
-  //       _mostrarError('El usuario no existe.');
-  //     }
-  //   });
-  // }
-
   void _mostrarError(String mensaje) {
     showDialog(
       context: context,
@@ -670,15 +614,6 @@ void _mostrarDetalleAmigo(String amigo) {
     print('No se pudo obtener el nombre de usuario.');
   }
 }
-
-  // void _cargarSolicitudes() {
-  // FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes').get().then((QuerySnapshot querySnapshot) {
-  //   if (querySnapshot.docs.isNotEmpty) {
-  //     setState(() {
-  //       solicitudes = querySnapshot.docs.map((doc) => doc['from'] as String).toList();
-  //     });
-  //   }
-  // });
 
   Stream<List<String>> _cargarSolicitudes() {
   return FirebaseFirestore.instance.collection('users').doc(usuarioActualId).collection('solicitudes')
