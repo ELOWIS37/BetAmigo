@@ -138,8 +138,36 @@ class BadgeItem extends StatefulWidget {
   _BadgeItemState createState() => _BadgeItemState();
 }
 
-class _BadgeItemState extends State<BadgeItem> {
+class _BadgeItemState extends State<BadgeItem> with TickerProviderStateMixin {
   bool _isHovering = false;
+  bool _isPurchased = false;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfPurchased();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _checkIfPurchased() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      List<dynamic> purchasedBadges = userDoc.get('purchasedBadges');
+      setState(() {
+        _isPurchased = purchasedBadges.contains(widget.badgeId);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,15 +210,76 @@ class _BadgeItemState extends State<BadgeItem> {
                     ),
                   ),
                 ),
+                _isPurchased ? _buildPurchasedOverlay() : SizedBox(),
               ],
             ),
           ),
           SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () => _buyItem(widget.badgeId),
-            child: Text('Comprar'),
-          ),
+          _isPurchased ? _buildPurchasedLabel() : _buildBuyButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPurchasedOverlay() {
+    return Positioned(
+      top: 10,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            '¡COMPRADO!',
+            style: TextStyle(color: Colors.green, fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurchasedLabel() {
+    return ScaleTransition(
+      scale: _animation,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text(
+                '¡COMPRADO!',
+                style: TextStyle(color: Colors.green, fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBuyButton() {
+    return ElevatedButton(
+      onPressed: () => _buyItem(widget.badgeId),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.blue,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      child: Text(
+        'Comprar',
+        style: TextStyle(fontSize: 16),
       ),
     );
   }
@@ -201,6 +290,16 @@ class _BadgeItemState extends State<BadgeItem> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'purchasedBadges': FieldValue.arrayUnion([itemId]),
       });
+      setState(() {
+        _isPurchased = true;
+      });
+      _animationController.forward(from: 0);
     }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 }
