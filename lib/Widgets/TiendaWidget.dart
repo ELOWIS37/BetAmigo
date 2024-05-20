@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
   runApp(MaterialApp(
-    title: 'Daily Shop',
+    title: 'Tienda Diaria',
     home: TiendaWidget(),
   ));
 }
@@ -15,13 +15,11 @@ class TiendaWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Tienda Diaria'),
-      ),
       body: DailyShop(),
     );
   }
 }
+
 
 class DailyShop extends StatefulWidget {
   @override
@@ -109,11 +107,6 @@ class _DailyShopState extends State<DailyShop> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(height: 20), // Añadido para empujar todo hacia arriba
-                        Image.asset(
-                          "../../assets/fondoTiendaDiaria/tituloTienda.png",
-                          width: constraints.maxWidth * 0.7,
-                          height: constraints.maxHeight * 0.25,
-                        ),
                         SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,

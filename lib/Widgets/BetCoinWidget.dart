@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:betamigo/Widgets/TiendaWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -149,12 +150,6 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Recompensa Diaria', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        automaticallyImplyLeading: !_claimingReward, // Deshabilitar el botón de retroceso si se está reclamando la recompensa
-      ),
       body: Stack(
         children: [
           AnimatedBackground(),
@@ -301,12 +296,272 @@ class _AnimatedBackgroundState extends State<AnimatedBackground> {
   }
 }
 
+class CombinedShop extends StatefulWidget {
+  @override
+  _CombinedShopState createState() => _CombinedShopState();
+}
+
+class _CombinedShopState extends State<CombinedShop> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 20), // Aumenta la duración para una animación más lenta
+    );
+
+    _animation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_controller)
+      ..addListener(() {
+        setState(() {}); // Redibujar el widget cuando cambia la animación
+      });
+
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Interval(0.0, 0.2, curve: Curves.easeInOut), // Aparece al principio
+    ));
+
+    _startAnimationSequence();
+  }
+
+  void _startAnimationSequence() {
+    _controller.forward(); // Iniciar la animación de opacidad
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _controller.reverse(); // Iniciar la animación inversa cuando se completa
+      } else if (status == AnimationStatus.dismissed) {
+        _controller.forward(); // Volver a iniciar la animación hacia adelante cuando se revierte
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Tienda Diaria'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 20, // Ajusta la altura según tus necesidades
+              child: Stack(
+                children: [
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(-1.0 + _animation.value, 0),
+                            end: Alignment(1.0 + _animation.value, 0),
+                            colors: [
+                              Color.fromARGB(255, 244, 92, 54),
+                              Color.fromARGB(255, 255, 204, 0),
+                              Colors.yellow,
+                              Colors.green,
+                              Colors.teal,
+                              Colors.blue,
+                              Colors.indigo,
+                              Colors.purple,
+                            ],
+                            stops: [
+                              0.0,
+                              0.1,
+                              0.2,
+                              0.3,
+                              0.4,
+                              0.5,
+                              0.6,
+                              0.7,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  AnimatedBuilder(
+                    animation: _opacityAnimation,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _opacityAnimation.value,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(-1.0, 0),
+                              end: Alignment(1.0, 0),
+                              colors: [
+                                Colors.transparent,
+                                Colors.transparent,
+                              ],
+                              stops: [0.0, 1.0],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 800, // Define una altura específica
+              child: BetCoinWidget(), // Reemplaza Placeholder con BetCoinWidget
+            ),
+            SizedBox(
+              height: 20, // Altura del separador, puedes ajustar según tu diseño
+              child: Stack(
+                children: [
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(-1.0 + _animation.value, 0),
+                            end: Alignment(1.0 + _animation.value, 0),
+                            colors: [
+                              Color.fromARGB(255, 244, 92, 54),
+                              Color.fromARGB(255, 255, 204, 0),
+                              Colors.yellow,
+                              Colors.green,
+                              Colors.teal,
+                              Colors.blue,
+                              Colors.indigo,
+                              Colors.purple,
+                            ],
+                            stops: [
+                              0.0,
+                              0.1,
+                              0.2,
+                              0.3,
+                              0.4,
+                              0.5,
+                              0.6,
+                              0.7,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  AnimatedBuilder(
+                    animation: _opacityAnimation,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _opacityAnimation.value,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(-1.0, 0),
+                              end: Alignment(1.0, 0),
+                              colors: [
+                                Colors.transparent,
+                                Colors.transparent,
+                              ],
+                              stops: [0.0, 1.0],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 400, // Define una altura específica
+              child: TiendaWidget(), // Reemplaza Placeholder con TiendaWidget
+            ),
+          SizedBox(
+              height: 20, // Altura del separador, puedes ajustar según tu diseño
+              child: Stack(
+                children: [
+                  AnimatedBuilder(
+                    animation: _animation,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(-1.0 + _animation.value, 0),
+                            end: Alignment(1.0 + _animation.value, 0),
+                            colors: [
+                              Color.fromARGB(255, 244, 92, 54),
+                              Color.fromARGB(255, 255, 204, 0),
+                              Colors.yellow,
+                              Colors.green,
+                              Colors.teal,
+                              Colors.blue,
+                              Colors.indigo,
+                              Colors.purple,
+                            ],
+                            stops: [
+                              0.0,
+                              0.1,
+                              0.2,
+                              0.3,
+                              0.4,
+                              0.5,
+                              0.6,
+                              0.7,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  AnimatedBuilder(
+                    animation: _opacityAnimation,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: _opacityAnimation.value,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment(-1.0, 0),
+                              end: Alignment(1.0, 0),
+                              colors: [
+                                Colors.transparent,
+                                Colors.transparent,
+                              ],
+                              stops: [0.0, 1.0],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 void main() {
   runApp(MaterialApp(
-    title: 'BetCoin App',
-    theme: ThemeData(
-      primarySwatch: Colors.deepPurple,
-    ),
-    home: BetCoinWidget(),
+    title: 'Tienda Diaria',
+    home: CombinedShop(), // Utiliza el widget CombinedPage como página principal
   ));
 }

@@ -268,18 +268,11 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             ListTile(
-              title: Text('Recompensa Diaria'), // Agrega la opción del drawer para la recompensa diaria
+              title: Text('Tienda Diaria'), // Agrega la opción del drawer para la recompensa diaria
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => BetCoinWidget()));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CombinedShop()));
               },
-            ),
-            ListTile(
-                title: Text('Tienda diaria'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => TiendaWidget()));
-                }
             ),
             ListTile(
               title: Text('Cerrar Sesión'),
