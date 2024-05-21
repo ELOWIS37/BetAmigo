@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:betamigo/FootballApiService.dart';
 
 class ResultadosApuesta extends StatefulWidget {
   final String nombreApuesta;
@@ -15,17 +15,19 @@ class ResultadosApuesta extends StatefulWidget {
 
 class _ResultadosApuestaState extends State<ResultadosApuesta> {
   List<String> escudosEquipos = [];
+  List<dynamic> resultadosMesAnterior = [];
 
   @override
   void initState() {
     super.initState();
     obtenerEscudosEquipos();
+    obtenerResultadosMesAnterior();
   }
 
   Future<void> obtenerEscudosEquipos() async {
     try {
       final response = await http.get(Uri.parse('https://api.football-data.org/v2/competitions/2021/teams'), headers: {
-        'X-Auth-Token': '9431a7b3652a47bfb3bda5bc870f4b56', // Reemplaza 'TU_API_KEY' con tu propia clave API
+        'X-Auth-Token': '9431a7b3652a47bfb3bda5bc870f4b56',
       });
 
       if (response.statusCode == 200) {
@@ -45,27 +47,41 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
     }
   }
 
-  Future<bool> verificarPartidoFinalizado(String leagueCode, String nombrePartido) async {
+  Future<void> obtenerResultadosMesAnterior() async {
     try {
-      final today = DateTime.now();
-      final formattedToday = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-      final response = await http.get(
-        Uri.parse('https://api.football-data.org/v2/competitions/$leagueCode/matches?dateFrom=$formattedToday&status=FINISHED'),
-        headers: {'X-Auth-Token': '9431a7b3652a47bfb3bda5bc870f4b56'},
-      );
+      final snapshot = await FirebaseFirestore.instance
+          .collection('apuestas')
+          .where('nombre', isEqualTo: widget.nombreApuesta)
+          .get();
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final matches = data['matches'] as List<dynamic>;
-        final match = matches.firstWhere((match) => match['homeTeam']['name'] == nombrePartido || match['awayTeam']['name'] == nombrePartido, orElse: () => null);
-
-        return match != null;
-      } else {
-        throw Exception('Error al verificar el partido finalizado');
+      if (snapshot.docs.isEmpty) {
+        print('No se encontraron datos de la apuesta.');
+        return;
       }
+
+      final apuestaDoc = snapshot.docs.first;
+      final apuesta = apuestaDoc.data() as Map<String, dynamic>;
+      final leagueCode = apuesta['league_code'];
+      final equipoLocal = apuesta['equipo_local'];
+      final equipoVisitante = apuesta['equipo_visitante'];
+
+      final List<dynamic> resultados = await FootballAPIService().fetchLastMonthFinishedMatches(leagueCode);
+
+      final filteredResults = resultados.where((match) {
+        final homeTeamName = match['homeTeam']['name'];
+        final awayTeamName = match['awayTeam']['name'];
+        return homeTeamName == equipoLocal && awayTeamName == equipoVisitante;
+      }).toList();
+
+      setState(() {
+        resultadosMesAnterior = filteredResults;
+      });
+
+      print('Resultados del mes anterior:');
+      print(resultadosMesAnterior);
+      print('Número de partidos encontrados: ${resultadosMesAnterior.length}');
     } catch (error) {
-      print('Error al verificar el partido finalizado: $error');
-      return false;
+      print('Error al obtener los resultados del mes anterior: $error');
     }
   }
 
@@ -103,25 +119,8 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  FutureBuilder<bool>(
-                    future: verificarPartidoFinalizado(apuesta['league_code'], nombrePartido),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      }
-                      if (snapshot.hasData && snapshot.data!) {
-                        return Text(
-                          'Partido Finalizado',
-                          style: TextStyle(fontSize: 20, color: Colors.green),
-                        );
-                      } else {
-                        return Container(); // No mostrar nada si el partido aún no ha finalizado
-                      }
-                    },
-                  ),
-                  SizedBox(height: 20),
                   Text(
-                    '${widget.nombreApuesta}',
+                    'Resultados para: ${widget.nombreApuesta}',
                     style: const TextStyle(fontSize: 24, color: Colors.indigo),
                     textAlign: TextAlign.center,
                   ),
@@ -133,7 +132,7 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    '$nombrePartido',
+                    'Nombre del Partido: $nombrePartido',
                     style: const TextStyle(fontSize: 18),
                     textAlign: TextAlign.center,
                   ),
@@ -185,6 +184,13 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
                       ),
                     ],
                   ),
+                  if (resultadosMesAnterior.length == 1) ...[
+                    SizedBox(height: 10),
+                    Text(
+                      'Resultado: ${resultadosMesAnterior[0]['score']['fullTime']['homeTeam']} - ${resultadosMesAnterior[0]['score']['fullTime']['awayTeam']}',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                   SizedBox(height: 20),
                   Text(
                     'Jugadores:',
@@ -194,48 +200,48 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
                   if (usuarios != null)
                     Column(
                       children: usuarios.map<Widget>((user) {
-                        final cantidadApostada = user['cantidad-apostada'];
+                        final cantidadApostada = user['cantidad_apostada'];
                         final golesLocal = user['goles-local'];
                         final golesVisitante = user['goles-visitante'];
-final nombreUsuario = user['nombre'];
-return Padding(
-padding: const EdgeInsets.symmetric(vertical: 8.0),
-child: Container(
-width: MediaQuery.of(context).size.width * 0.8,
-decoration: BoxDecoration(
-color: Colors.grey[200],
-borderRadius: BorderRadius.circular(10),
-),
-padding: EdgeInsets.all(12),
-child: Column(
-crossAxisAlignment: CrossAxisAlignment.start,
-children: [
-Text(
-'$nombreUsuario',
-style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-),
-SizedBox(height: 8),
-Text(
-'Predicción: $golesLocal - $golesVisitante',
-style: TextStyle(fontSize: 16),
-),
-SizedBox(height: 8),
-Text(
-'Apuesta: $cantidadApostada',
-style: TextStyle(fontSize: 16),
-),
-],
-),
-),
-);
-}).toList(),
-),
-],
-);
-},
-),
-),
-),
-);
-}
+                        final nombreUsuario = user['nombre'];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Usuario: $nombreUsuario',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Resultado: $golesLocal - $golesVisitante',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Apuesta: $cantidadApostada',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }

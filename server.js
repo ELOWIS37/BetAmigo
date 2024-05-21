@@ -51,6 +51,7 @@ app.get('/api/:league/results', async (req, res) => {
     const lastWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7); // Obtener la fecha de hace una semana
     const formattedToday = today.toISOString().split('T')[0]; // Formatear la fecha actual en formato ISO
     const formattedLastWeek = lastWeek.toISOString().split('T')[0]; // Formatear la fecha de hace una semana en formato ISO
+    console.log(formattedToday)
     const response = await fetch(`https://api.football-data.org/v2/competitions/${league}/matches?dateFrom=${formattedLastWeek}&dateTo=${formattedToday}&status=FINISHED`, {
       headers: {
         'X-Auth-Token': '9431a7b3652a47bfb3bda5bc870f4b56', // Reemplaza 'TU_API_KEY' con tu propia clave API
@@ -63,6 +64,28 @@ app.get('/api/:league/results', async (req, res) => {
     res.status(500).json({ error: 'Error fetching last week\'s finished matches' });
   }
 });
+
+app.get('/api/:league/last-month-results', async (req, res) => {
+  const league = req.params.league;
+  try {
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate()); // Obtener la fecha de hace un mes
+    const formattedToday = today.toISOString().split('T')[0]; // Formatear la fecha actual en formato ISO
+    const formattedLastMonth = lastMonth.toISOString().split('T')[0]; // Formatear la fecha de hace un mes en formato ISO
+
+    const response = await fetch(`https://api.football-data.org/v2/competitions/${league}/matches?dateFrom=${formattedLastMonth}&dateTo=${formattedToday}&status=FINISHED`, {
+      headers: {
+        'X-Auth-Token': '9431a7b3652a47bfb3bda5bc870f4b56', // Reemplaza 'TU_API_KEY' con tu propia clave API
+      },
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching last month\'s finished matches:', error);
+    res.status(500).json({ error: 'Error fetching last month\'s finished matches' });
+  }
+});
+
 
 
 // Iniciar el servidor
