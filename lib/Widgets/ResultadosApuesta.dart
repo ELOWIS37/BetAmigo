@@ -85,6 +85,160 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
     }
   }
 
+  void reclamarRecompensa() async {
+  try {
+    // Obtener los datos del partido
+    final partido = resultadosMesAnterior[0]; // Suponiendo que solo haya un partido en la lista
+
+    // Obtener los goles del equipo local y visitante del partido
+    final golesLocalPartido = partido['score']['fullTime']['homeTeam'];
+    final golesVisitantePartido = partido['score']['fullTime']['awayTeam'];
+
+    // Obtener el nombre del grupo del partido
+    final nombreGrupo = widget.nombreApuesta;
+
+    // Verificar si la apuesta ya ha sido cobrada
+    final apuestaCobrada = await verificarApuestaCobrada(nombreGrupo);
+    if (apuestaCobrada) {
+      print('La apuesta ya ha sido cobrada anteriormente.');
+      return;
+    }
+
+    // Lista para almacenar los nombres de los usuarios que acertaron el resultado
+    List<String> ganadores = [];
+
+    // Buscar las apuestas que coinciden con el nombre del grupo
+    final snapshot = await FirebaseFirestore.instance
+        .collection('apuestas')
+        .where('nombre', isEqualTo: nombreGrupo)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      print('No se encontraron apuestas para este grupo.');
+      return;
+    }
+
+    // Verificar los resultados de cada apuesta
+    snapshot.docs.forEach((apuestaDoc) {
+      final apuesta = apuestaDoc.data() as Map<String, dynamic>;
+
+      final usuarios = apuesta['usuarios'] as List<dynamic>;
+
+      usuarios.forEach((usuario) {
+        final golesLocalUsuario = usuario['goles-local'];
+        final golesVisitanteUsuario = usuario['goles-visitante'];
+
+        // Verificar si el usuario acertó el resultado
+        if (golesLocalUsuario == golesLocalPartido && golesVisitanteUsuario == golesVisitantePartido) {
+          // Agregar el nombre del usuario a la lista de ganadores
+          ganadores.add(usuario['nombre']);
+        }
+      });
+    });
+
+    // Verificar si hay ganadores
+    if (ganadores.isEmpty) {
+      print('No hay ganadores para reclamar la recompensa.');
+      return;
+    }
+
+    // Calcular la cantidad de recompensa por usuario
+    final bote = await obtenerBote();
+    final cantidadPorUsuario = bote / ganadores.length;
+
+    // Actualizar las monedas de los usuarios ganadores
+    ganadores.forEach((ganador) async {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .where('user', isEqualTo: ganador)
+          .get()
+          .then((QuerySnapshot querySnapshot) {
+        querySnapshot.docs.forEach((doc) {
+          // Sumar la cantidad de recompensa a las monedas del usuario
+          final userRef = FirebaseFirestore.instance.collection('users').doc(doc.id);
+          userRef.update({'betCoins': FieldValue.increment(cantidadPorUsuario)});
+        });
+      });
+    });
+
+    // Marcar la apuesta como cobrada
+    await marcarApuestaComoCobrada(nombreGrupo);
+
+    print('Recompensa reclamada con éxito.');
+  } catch (error) {
+    print('Error al reclamar la recompensa: $error');
+  }
+}
+
+Future<bool> verificarApuestaCobrada(String nombreApuesta) async {
+  try {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('apuestas')
+        .where('nombre', isEqualTo: nombreApuesta)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      print('No se encontraron datos de la apuesta.');
+      return false;
+    }
+
+    final apuestaDoc = snapshot.docs.first;
+    final apuesta = apuestaDoc.data() as Map<String, dynamic>;
+    final cobrado = apuesta['cobrado'] as String?;
+
+    return cobrado == 'si';
+  } catch (error) {
+    print('Error al verificar si la apuesta está cobrada: $error');
+    return false;
+  }
+}
+
+Future<double> obtenerBote() async {
+  try {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('apuestas')
+        .where('nombre', isEqualTo: widget.nombreApuesta)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      print('No se encontraron datos de la apuesta.');
+      return 0.0;
+    }
+
+    final apuestaDoc = snapshot.docs.first;
+    final apuesta = apuestaDoc.data() as Map<String, dynamic>;
+    final bote = apuesta['bote'] as double;
+
+    return bote;
+  } catch (error) {
+    print('Error al obtener el bote de la apuesta: $error');
+    return 0.0;
+  }
+}
+
+
+Future<void> marcarApuestaComoCobrada(String nombreApuesta) async {
+  try {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('apuestas')
+        .where('nombre', isEqualTo: nombreApuesta)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      print('No se encontraron datos de la apuesta.');
+      return;
+    }
+
+    final apuestaDoc = snapshot.docs.first;
+    await apuestaDoc.reference.update({'cobrado': 'si'});
+  } catch (error) {
+    print('Error al marcar la apuesta como cobrada: $error');
+  }
+}
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,14 +267,13 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
               final bote = apuesta['bote'];
               final equipoLocal = apuesta['equipo_local'];
               final equipoVisitante = apuesta['equipo_visitante'];
-              final nombrePartido = apuesta['nombre_partido'];
               final usuarios = apuesta['usuarios'] as List<dynamic>?;
 
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Resultados para: ${widget.nombreApuesta}',
+                    'Resultados para:  ${widget.nombreApuesta}',
                     style: const TextStyle(fontSize: 24, color: Colors.indigo),
                     textAlign: TextAlign.center,
                   ),
@@ -128,12 +281,6 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
                   Text(
                     'Bote: $bote',
                     style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'Nombre del Partido: $nombrePartido',
-                    style: const TextStyle(fontSize: 18),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 20),
@@ -156,6 +303,13 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
                               equipoLocal,
                               style: TextStyle(fontSize: 18),
                             ),
+                            if (resultadosMesAnterior.length == 1) ...[
+                              SizedBox(height: 10),
+                              Text(
+                                '${resultadosMesAnterior[0]['score']['fullTime']['homeTeam']}',
+                                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -179,28 +333,28 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
                               equipoVisitante,
                               style: TextStyle(fontSize: 18),
                             ),
+                            if (resultadosMesAnterior.length == 1) ...[
+                              SizedBox(height: 10),
+                              Text(
+                                '${resultadosMesAnterior[0]['score']['fullTime']['awayTeam']}',
+                                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ],
                         ),
                       ),
                     ],
                   ),
-                  if (resultadosMesAnterior.length == 1) ...[
-                    SizedBox(height: 10),
-                    Text(
-                      'Resultado: ${resultadosMesAnterior[0]['score']['fullTime']['homeTeam']} - ${resultadosMesAnterior[0]['score']['fullTime']['awayTeam']}',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ],
                   SizedBox(height: 20),
                   Text(
-                    'Jugadores:',
+                    'Participantes:',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 10),
                   if (usuarios != null)
                     Column(
                       children: usuarios.map<Widget>((user) {
-                        final cantidadApostada = user['cantidad_apostada'];
+                        final cantidadApostada = user['cantidad-apostada'];
                         final golesLocal = user['goles-local'];
                         final golesVisitante = user['goles-visitante'];
                         final nombreUsuario = user['nombre'];
@@ -242,6 +396,12 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
           ),
         ),
       ),
+      floatingActionButton: resultadosMesAnterior.length == 1
+          ? FloatingActionButton(
+              onPressed: reclamarRecompensa,
+              child: Icon(Icons.emoji_events), // Cambiado a un icono de trofeo
+            )
+          : null,
     );
   }
 }
