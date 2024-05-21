@@ -239,7 +239,14 @@ class _MainScreenState extends State<MainScreen> {
           children: <Widget>[
             DrawerHeader(
               decoration: const BoxDecoration(
-                color: Colors.blue,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.lightBlueAccent,
+                    Colors.greenAccent,
+                  ],
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,48 +463,63 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                 String imageId = entry.value;
                                 bool isPurchased = shieldPurchases[index];
                                 return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      selectedImageId = imageId;
-                                    });
-                                    if (isPurchased) {
-                                      _pickAndSetImage(imageId, 'team');
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                        content: Text('¡Debes comprar este escudo antes de seleccionarlo!'),
-                                      ));
-                                    }
-                                  },
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(50),
-                                          border: Border.all(
-                                            color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
-                                            width: 4,
-                                          ),
-                                          // Aquí cambia la ruta de la imagen
-                                          image: DecorationImage(
-                                            image: AssetImage('imagenTeam/$imageId.png'),
-                                            fit: BoxFit.contain, // Ajusta la imagen para que se vea completamente dentro del contenedor
-                                          ),
-                                        ),
-                                      ),
-                                      if (!isPurchased)
-                                        Positioned.fill(
-                                          child: Icon(
-                                            Icons.lock,
-                                            color: Colors.grey[600],
-                                            size: 40,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                );
+  onTap: () {
+    setState(() {
+      selectedImageId = imageId;
+    });
+    if (isPurchased) {
+      _pickAndSetImage(imageId, 'team');
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Escudo Bloqueado'),
+            content: Text('¡Debes comprar este escudo antes de seleccionarlo!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('Cerrar'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  },
+  child: Stack(
+    alignment: Alignment.center,
+    children: [
+      Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(
+            color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
+            width: 4,
+          ),
+          // Aquí cambia la ruta de la imagen
+          image: DecorationImage(
+            image: AssetImage('imagenTeam/$imageId.png'),
+            fit: BoxFit.contain, // Ajusta la imagen para que se vea completamente dentro del contenedor
+          ),
+        ),
+      ),
+      if (!isPurchased)
+        Positioned.fill(
+          child: Icon(
+            Icons.lock,
+            color: Colors.grey[600],
+            size: 40,
+          ),
+        ),
+    ],
+  ),
+);
+
 
                               }).toList(),
                       ),
