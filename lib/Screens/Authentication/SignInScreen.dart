@@ -128,10 +128,27 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            '¡Apuesta con los Amigos!',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.blueAccent,
+              shadows: [
+                Shadow(
+                  blurRadius: 10.0,
+                  color: Colors.black26,
+                  offset: Offset(2.0, 2.0),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24),
           _buildTextField(emailController, 'Correo'),
           SizedBox(height: 16),
           _buildPasswordField(passwordController, 'Contraseña'),
-          SizedBox(height: 16),
+          SizedBox(height: 13),
           ElevatedButton(
             onPressed: () async {
               try {
@@ -154,12 +171,20 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 148, 196, 236),
+              backgroundColor: const Color.fromARGB(255, 0, 123, 255),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              padding: EdgeInsets.symmetric(vertical: 14),
             ),
-            child: Text('Iniciar Sesión'),
+            child: Text(
+              'Iniciar Sesión',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -174,30 +199,55 @@ class _SignInScreenState extends State<SignInScreen> with SingleTickerProviderSt
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            '¡Bienvenido a BetAmigo!',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.blueAccent,
+              shadows: [
+                Shadow(
+                  blurRadius: 10.0,
+                  color: Colors.black26,
+                  offset: Offset(2.0, 2.0),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24),
           _buildTextField(userController, 'Usuario'),
           SizedBox(height: 16),
           _buildTextField(emailController, 'Correo'),
           SizedBox(height: 16),
           _buildPasswordField(passwordController, 'Contraseña'),
-          SizedBox(height: 16),
+          SizedBox(height: 13),
           ElevatedButton(
             onPressed: () {
               _register(context); // Llama a la función de registro
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 148, 196, 236),
+              backgroundColor: const Color.fromARGB(255, 0, 123, 255),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              padding: EdgeInsets.symmetric(vertical: 14),
             ),
-            child: Text('Registrarse'),
+            child: Text(
+              'Registrarse',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Función para construir un campo de texto con borde
+ // Función para construir un campo de texto con borde
   Widget _buildTextField(TextEditingController controller, String labelText) {
     return TextField(
       controller: controller,
