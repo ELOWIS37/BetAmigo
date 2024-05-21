@@ -140,45 +140,46 @@ class _LiveScoresWidgetState extends State<LiveScoresWidget> {
   }
 
   Widget _buildFinishedMatchesList() {
-    return FutureBuilder<List<dynamic>?>(
-      future: _apiService.fetchTodayFinishedMatches(widget.league),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          final error = snapshot.error;
-          if (error is TooManyRequestsException) {
-            return Center(child: Text(error.message));
-          }
-          return Center(child: Text('Cargando resultados...'));
-        } else if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
-          return _buildNoResultsMessage();
-        } else {
-          final List<dynamic> matches = snapshot.data!;
-          return ListView.builder(
-            itemCount: matches.length,
-            itemBuilder: (context, index) {
-              final match = matches[index];
-              final matchDate = DateTime.parse(match['utcDate']);
-              final homeTeamName = match['homeTeam']['name'];
-              final awayTeamName = match['awayTeam']['name'];
-              return Card(
-                margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ListTile(
-                  title: Text('$homeTeamName vs $awayTeamName'),
-                  subtitle: Text(DateFormat('EEEE, MMM d, y - HH:mm').format(matchDate)),
-                  trailing: Text('${match['score']['fullTime']['homeTeam']} - ${match['score']['fullTime']['awayTeam']}'),
-                  onTap: () {
-                    _showMatchDetails(context, match);
-                  },
-                ),
-              );
-            },
-          );
+  return FutureBuilder<List<dynamic>?>(
+    future: _apiService.fetchTodayFinishedMatches(widget.league),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        final error = snapshot.error;
+        if (error is TooManyRequestsException) {
+          return Center(child: Text(error.message));
         }
-      },
-    );
-  }
+        return Center(child: Text('Cargando resultados...'));
+      } else if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
+        return _buildNoResultsMessage();
+      } else {
+        final List<dynamic> matches = snapshot.data!;
+        return ListView.builder(
+          itemCount: matches.length,
+          itemBuilder: (context, index) {
+            final match = matches[index];
+            final matchDate = DateTime.parse(match['utcDate']).add(Duration(hours: 2));
+            final homeTeamName = match['homeTeam']['name'];
+            final awayTeamName = match['awayTeam']['name'];
+            return Card(
+              margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: ListTile(
+                title: Text('$homeTeamName vs $awayTeamName'),
+                subtitle: Text(DateFormat('EEEE, MMM d, y - HH:mm').format(matchDate)),
+                trailing: Text('${match['score']['fullTime']['homeTeam']} - ${match['score']['fullTime']['awayTeam']}'),
+                onTap: () {
+                  _showMatchDetails(context, match);
+                },
+              ),
+            );
+          },
+        );
+      }
+    },
+  );
+}
+
 
   Widget _buildNextWeekMatchesList() {
     if (_matches.isEmpty && _errorMessage == null) {
@@ -195,7 +196,7 @@ class _LiveScoresWidgetState extends State<LiveScoresWidget> {
         itemCount: _matches.length,
         itemBuilder: (context, index) {
           final match = _matches[index];
-          final matchDate = DateTime.parse(match['utcDate']);
+          final matchDate = DateTime.parse(match['utcDate']).add(Duration(hours: 2)); // Agregar dos horas al tiempo UTC
           final isPlayed = match['status'] == 'FINISHED';
           final homeTeamName = match['homeTeam']['name'];
           final awayTeamName = match['awayTeam']['name'];
@@ -214,6 +215,7 @@ class _LiveScoresWidgetState extends State<LiveScoresWidget> {
       );
     }
   }
+
 
   Widget _buildNoMatchesMessage() {
     return Center(
@@ -254,6 +256,8 @@ class _LiveScoresWidgetState extends State<LiveScoresWidget> {
   }
 
   void _showMatchDetails(BuildContext context, dynamic match) {
+    final matchDate = DateTime.parse(match['utcDate']).add(Duration(hours: 2)); // Agregar dos horas al tiempo UTC
+    print('Fecha y hora ajustadas: $matchDate');
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -263,7 +267,7 @@ class _LiveScoresWidgetState extends State<LiveScoresWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Fecha: ${DateFormat('EEEE, MMM d, y - HH:mm').format(DateTime.parse(match['utcDate']))}'),
+              Text('Fecha: ${DateFormat('EEEE, MMM d, y - HH:mm').format(matchDate)}'),
               SizedBox(height: 8),
               Text('Estado: ${match['status']}'),
               SizedBox(height: 8),
@@ -283,6 +287,7 @@ class _LiveScoresWidgetState extends State<LiveScoresWidget> {
       },
     );
   }
+
 }
 
 void main() {
