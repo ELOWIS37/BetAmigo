@@ -90,18 +90,49 @@ class _BettingWidgetState extends State<BettingWidget> {
           grupos = groupsResponse.docs.map((doc) => doc.data()['nombre']).toList().cast<String>();
           // Si el usuario está dentro de algún grupo, carga las apuestas del primer grupo
           selectedGroup = grupos.first;
-          _fetchGroupBets(selectedGroup!);
+          _fetchUserBets();
         });
       }
     }
   }
 
-  Future<void> _fetchGroupBets(String groupName) async {
-    final groupBetsSnapshot = await FirebaseFirestore.instance.collection('apuestas').where('grupo', isEqualTo: groupName).get();
+Future<void> _fetchUserBets() async {
+  String usuarioActualEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+  final userSnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: usuarioActualEmail).limit(1).get();
+
+  if (userSnapshot.docs.isNotEmpty) {
+    final userName = userSnapshot.docs.first.data()?['user'];
+    print('Nombre de usuario: $userName');
+
+    final groupBetsSnapshot = await FirebaseFirestore.instance.collection('apuestas').get();
+    
+    print('Apuestas encontradas:');
+    groupBetsSnapshot.docs.forEach((doc) {
+      print('Apuesta: ${doc.data()}');
+      List<dynamic> usuarios = doc.data()?['usuarios'];
+      print('Usuarios en esta apuesta: $usuarios');
+      if (usuarios.any((usuario) => usuario['nombre'] == userName)) {
+        print('Usuario encontrado en esta apuesta');
+      } else {
+        print('Usuario no encontrado en esta apuesta');
+      }
+    });
+
+    List<String> userBets = [];
+    groupBetsSnapshot.docs.forEach((doc) {
+      List<dynamic> usuarios = doc.data()?['usuarios'];
+      if (usuarios.any((usuario) => usuario['nombre'] == userName)) {
+        userBets.add(doc.data()?['nombre'] as String);
+      }
+    });
+
+    print('Apuestas del usuario: $userBets');
+
     setState(() {
-      apuestas = groupBetsSnapshot.docs.map((doc) => doc.data()['nombre'] as String).toList();
+      apuestas = userBets;
     });
   }
+}
 
 
 @override
