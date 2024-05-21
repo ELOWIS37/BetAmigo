@@ -315,7 +315,7 @@ class _CombinedShopState extends State<CombinedShop> with SingleTickerProviderSt
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 20), // Aumenta la duración para una animación más lenta
+      duration: Duration(seconds: 17), // Aumenta la duración para una animación más lenta
     );
 
     _animation = Tween<double>(

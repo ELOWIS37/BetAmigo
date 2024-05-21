@@ -288,7 +288,6 @@ Widget _buildGruposTab() {
             _mostrarSeleccionAmigos();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color.fromARGB(51, 51, 51, 51),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             ),

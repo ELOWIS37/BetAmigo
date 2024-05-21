@@ -819,7 +819,7 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
                 style: const TextStyle(fontSize: 16, color: Color.fromARGB(255,67, 199, 249)),
               ),
               IconButton(
-                icon: Icon(Icons.emoji_events, color: Color.fromARGB(255,67, 199, 249)),
+                icon: Icon(Icons.emoji_events, color: Color.fromARGB(255, 243, 224, 19)),
                 onPressed: _mostrarResultado,
               ),
             ],

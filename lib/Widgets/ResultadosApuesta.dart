@@ -249,159 +249,187 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey, // Asigna la clave del Scaffold
-      appBar: AppBar(
-        title: const Text('Resultados de la Apuesta'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: widget.nombreApuesta).snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return CircularProgressIndicator();
-              }
-              if (!snapshot.hasData || snapshot.data == null || snapshot.data!.docs.isEmpty) {
-                return Text('No se encontraron datos de la apuesta.');
-              }
-              final apuestaDoc = snapshot.data!.docs.first;
-              final apuesta = apuestaDoc.data() as Map<String, dynamic>?;
-              if (apuesta == null) {
-                return Text('No se encontraron datos de la apuesta.');
-              }
-
-              final bote = apuesta['bote'];
-              final equipoLocal = apuesta['equipo_local'];
-              final equipoVisitante = apuesta['equipo_visitante'];
-              final usuarios = apuesta['usuarios'] as List<dynamic>?;
-
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Resultados para:  ${widget.nombreApuesta}',
-                    style: const TextStyle(fontSize: 24, color: Color.fromARGB(255,67, 199, 249)),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Bote: $bote',
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'EQUIPO LOCAL',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
-                            ),
-                            Text(
-                              equipoLocal,
-                              style: TextStyle(fontSize: 24, color: Colors.blue),
-                            ),
-                            if (resultadosMesAnterior.length == 1) ...[
-                              SizedBox(height: 10),
-                              Text(
-                                '${resultadosMesAnterior[0]['score']['fullTime']['homeTeam']}',
-                                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      Text(
-                        'vs',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              'EQUIPO VISITANTE',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
-                            ),
-                            Text(
-                              equipoVisitante,
-                              style: TextStyle(fontSize: 24, color: Colors.red),
-                            ),
-                            if (resultadosMesAnterior.length == 1) ...[
-                              SizedBox(height: 10),
-                              Text(
-                                '${resultadosMesAnterior[0]['score']['fullTime']['awayTeam']}',
-                                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Participantes:',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 10),
-                  if (usuarios != null)
-                    Column(
-                      children: usuarios.map<Widget>((user) {
-                        final cantidadApostada = user['cantidad-apostada'];
-                        final golesLocal = user['goles-local'];
-                        final golesVisitante = user['goles-visitante'];
-                        final nombreUsuario = user['nombre'];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Container(
-                            width: MediaQuery.of(context).size.width * 0.8,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Usuario: $nombreUsuario',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Resultado: $golesLocal - $golesVisitante',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Apuesta: $cantidadApostada',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                ],
-              );
-            },
-          ),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    key: _scaffoldKey, // Asigna la clave del Scaffold
+    appBar: AppBar(
+      title: Text(
+        'Resultados para: ${widget.nombreApuesta}',
+        style: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.black, // Cambiado a color negro
         ),
       ),
-      floatingActionButton: resultadosMesAnterior.length == 1
-          ? FloatingActionButton(
-        onPressed: reclamarRecompensa,
-        child: Icon(Icons.emoji_events), // Cambiado a un icono de trofeo
-      )
-          : null,
-    );
-  }
+    ),
+    body: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: 20),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: widget.nombreApuesta).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data == null || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text('No se encontraron datos de la apuesta.'));
+                }
+                final apuestaDoc = snapshot.data!.docs.first;
+                final apuesta = apuestaDoc.data() as Map<String, dynamic>?;
+                if (apuesta == null) {
+                  return Center(child: Text('No se encontraron datos de la apuesta.'));
+                }
+
+                final bote = apuesta['bote'];
+                final equipoLocal = apuesta['equipo_local'];
+                final equipoVisitante = apuesta['equipo_visitante'];
+                final usuarios = apuesta['usuarios'] as List<dynamic>?;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.amber.withOpacity(0.3), // Cambiado el color a dorado con opacidad
+                        boxShadow: [
+                          BoxShadow(color: Colors.grey.withOpacity(0.5), spreadRadius: 3, blurRadius: 7, offset: Offset(0, 3)),
+                        ], // Sombra
+                      ),
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Bote: $bote',
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black), // Cambiado el color a negro
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: Card(
+                            elevation: 3,
+                            color: Colors.blue.withOpacity(0.3), // Cambiado el color a azul con opacidad
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'EQUIPO LOCAL',
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white), // Cambiado el color a blanco
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    equipoLocal,
+                                    style: TextStyle(fontSize: 18, color: Colors.white), // Cambiado el color a blanco
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'vs',
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(
+                          child: Card(
+                            elevation: 3,
+                            color: Colors.red.withOpacity(0.3), // Cambiado el color a rojo con opacidad
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'EQUIPO VISITANTE',
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white), // Cambiado el color a blanco
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    equipoVisitante,
+                                    style: TextStyle(fontSize: 18, color: Colors.white), // Cambiado el color a blanco
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Participantes:',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black), // Cambiado el color a negro
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 10),
+                    if (usuarios != null)
+                      Column(
+                        children: usuarios.map<Widget>((user) {
+                          final cantidadApostada = user['cantidad-apostada'];
+                          final golesLocal = user['goles-local'];
+                          final golesVisitante = user['goles-visitante'];
+                          final nombreUsuario = user['nombre'];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Card(
+                              elevation: 3,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch, // Alinear el contenido a lo largo del ancho del card
+                                  children: [
+                                    Text(
+                                      'Usuario: $nombreUsuario',
+                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black), // Cambiado el color a negro
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Resultado: $golesLocal - $golesVisitante',
+                                      style: TextStyle(fontSize: 16, color: Colors.black), // Cambiado el color a negro
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Apuesta: $cantidadApostada',
+                                      style: TextStyle(fontSize: 16, color: Colors.black), // Cambiado el color a negro
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+    floatingActionButton: resultadosMesAnterior.length == 1
+        ? FloatingActionButton(
+            onPressed: reclamarRecompensa,
+            child: Icon(Icons.emoji_events), // Cambiado a un icono de trofeo
+          )
+        : null,
+  );
+}
+
+
+
+
 }
