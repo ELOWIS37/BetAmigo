@@ -14,6 +14,8 @@ class ResultadosApuesta extends StatefulWidget {
 }
 
 class _ResultadosApuestaState extends State<ResultadosApuesta> {
+    final GlobalKey<ScaffoldMessengerState> _scaffoldKey = GlobalKey<ScaffoldMessengerState>();
+
   List<String> escudosEquipos = [];
   List<dynamic> resultadosMesAnterior = [];
 
@@ -99,8 +101,13 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
 
     // Verificar si la apuesta ya ha sido cobrada
     final apuestaCobrada = await verificarApuestaCobrada(nombreGrupo);
-    if (apuestaCobrada) {
-      print('La apuesta ya ha sido cobrada anteriormente.');
+     if (apuestaCobrada) {
+      // Mostrar un SnackBar para informar que la apuesta ya ha sido cobrada
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Esta apuesta ya ha sido cobrada.'),
+        ),
+      );
       return;
     }
 
@@ -163,6 +170,11 @@ class _ResultadosApuestaState extends State<ResultadosApuesta> {
 
     // Marcar la apuesta como cobrada
     await marcarApuestaComoCobrada(nombreGrupo);
+       ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('¡Apuesta cobrada con éxito!'),
+      ),
+    );
 
     print('Recompensa reclamada con éxito.');
   } catch (error) {
@@ -231,6 +243,8 @@ Future<void> marcarApuestaComoCobrada(String nombreApuesta) async {
 
     final apuestaDoc = snapshot.docs.first;
     await apuestaDoc.reference.update({'cobrado': 'si'});
+    _scaffoldKey.currentState?.showSnackBar(SnackBar(content: Text('Apuesta cobrada con éxito.')));
+
   } catch (error) {
     print('Error al marcar la apuesta como cobrada: $error');
   }
@@ -240,14 +254,15 @@ Future<void> marcarApuestaComoCobrada(String nombreApuesta) async {
 
 
   @override
-  Widget build(BuildContext context) {
+    Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey, // Asigna la clave del Scaffold
       appBar: AppBar(
         title: const Text('Resultados de la Apuesta'),
         backgroundColor: Colors.indigo,
       ),
       body: Center(
-        child: Padding(
+              child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('apuestas').where('nombre', isEqualTo: widget.nombreApuesta).snapshots(),
