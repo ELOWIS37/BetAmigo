@@ -315,6 +315,18 @@ Future<void> _showProfileDialog(BuildContext context) async {
       });
     }
 
+    List<Map<String, dynamic>> unlockedShields = [];
+    List<Map<String, dynamic>> lockedShields = [];
+    for (int i = 0; i < _imageTeamIds.length; i++) {
+      if (shieldPurchases[i]) {
+        unlockedShields.add({'id': _imageTeamIds[i], 'purchased': true});
+      } else {
+        lockedShields.add({'id': _imageTeamIds[i], 'purchased': false});
+      }
+    }
+    List<Map<String, dynamic>> sortedShields = [...unlockedShields, ...lockedShields];
+
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -458,99 +470,95 @@ Future<void> _showProfileDialog(BuildContext context) async {
                                   ),
                                 );
                               }).toList()
-                            : _imageTeamIds.asMap().entries.map((entry) {
-                                int index = entry.key;
-                                String imageId = entry.value;
-                                bool isPurchased = shieldPurchases[index];
-                                return GestureDetector(
-  onTap: () {
-    setState(() {
-      selectedImageId = imageId;
-    });
-    if (isPurchased) {
-      _pickAndSetImage(imageId, 'team');
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Escudo Bloqueado'),
-            content: Text('¡Debes comprar este escudo antes de seleccionarlo!'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('Cerrar'),
-              ),
-            ],
-          );
-        },
-      );
-    }
-  },
-  child: Stack(
-    alignment: Alignment.center,
-    children: [
-      Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(
-            color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
-            width: 4,
-          ),
-          // Aquí cambia la ruta de la imagen
-          image: DecorationImage(
-            image: AssetImage('imagenTeam/$imageId.png'),
-            fit: BoxFit.contain, // Ajusta la imagen para que se vea completamente dentro del contenedor
-          ),
-        ),
-      ),
-      if (!isPurchased)
-        Positioned.fill(
-          child: Icon(
-            Icons.lock,
-            color: Colors.grey[600],
-            size: 40,
-          ),
-        ),
-    ],
-  ),
-);
-
-
-                              }).toList(),
+                              : sortedShields.map((shield) {
+                                  String imageId = shield['id'];
+                                  bool isPurchased = shield['purchased'];
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedImageId = imageId;
+                                      });
+                                      if (isPurchased) {
+                                        _pickAndSetImage(imageId, 'team');
+                                      } else {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: Text('Escudo Bloqueado'),
+                                              content: Text('¡Debes comprar este escudo antes de seleccionarlo!'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: Text('Cerrar'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      }
+                                    },
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Container(
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(50),
+                                            border: Border.all(
+                                              color: imageId == selectedImageId ? Colors.blue : Colors.transparent,
+                                              width: 4,
+                                            ),
+                                            image: DecorationImage(
+                                              image: AssetImage('../assets/imagenTeam/$imageId.png'),
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                        ),
+                                        if (!isPurchased)
+                                          Positioned.fill(
+                                            child: Icon(
+                                              Icons.lock,
+                                              color: Colors.grey[600],
+                                              size: 40,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _profileImageId = selectedImageId;
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Text('Aceptar'),
+                        ),
+                      ],
+                    );
                   },
-                  child: Text('Cancelar'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _profileImageId = selectedImageId;
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: Text('Aceptar'),
-                ),
-              ],
+                );
+              },
             );
-          },
-        );
-      },
-    );
-  }
-}
+          }
+        }
 
 
 
