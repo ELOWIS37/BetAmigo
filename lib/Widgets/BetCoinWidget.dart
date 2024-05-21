@@ -28,14 +28,14 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
     _startTimer();
     _animationController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 1500), // Duración de la animación
+      duration: Duration(milliseconds: 1500),
     );
   }
 
   @override
   void dispose() {
     _timer.cancel();
-    _animationController.dispose(); // Importante liberar los recursos del AnimationController
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -60,7 +60,7 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
       if (lastClaimTimestamp != null) {
         _lastClaimDate = lastClaimTimestamp.toDate();
       } else {
-        _lastClaimDate = DateTime.now().subtract(Duration(days: 1)); // Set the last claim date to one day ago initially
+        _lastClaimDate = DateTime.now().subtract(Duration(days: 1));
       }
     });
   }
@@ -98,15 +98,15 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
       _claimingReward = true;
     });
 
-    _startAnimation(); // Iniciar la animación
+    _startAnimation();
 
-    await Future.delayed(Duration(milliseconds: 1500)); // Simula un pequeño retraso para la animación
+    await Future.delayed(Duration(milliseconds: 1500));
 
     setState(() {
       _claimingReward = false;
       _betCoins += reward;
       _dayCount++;
-      _lastClaimDate = lastMidnight; // Actualizar la fecha del último reclamo
+      _lastClaimDate = lastMidnight;
     });
 
     await FirebaseFirestore.instance.collection('users').doc(_user.uid).update({
@@ -119,13 +119,11 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
       content: Text('¡Has reclamado tu recompensa diaria de $reward monedas!'),
     ));
 
-    // Start countdown for next claim if it's not already started
     if (!_timer.isActive) {
       _startTimer();
     }
 
     if (_dayCount == 7) {
-      // Reset day count and last claim date if it's the 7th day
       _dayCount = 0;
       await FirebaseFirestore.instance.collection('users').doc(_user.uid).update({
         'lastClaimDate': Timestamp.fromDate(_lastClaimDate),
@@ -153,109 +151,113 @@ class _BetCoinWidgetState extends State<BetCoinWidget> with TickerProviderStateM
       body: Stack(
         children: [
           AnimatedBackground(),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(height: 20),
-                Text(
-                  'Próxima recompensa diaria en: ${_formatDuration(_timeRemaining)}',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
-                SizedBox(height: 20),
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: 3,
-                    children: List.generate(7, (index) {
-                      bool isCurrentDay = _dayCount == index;
-                      bool isPastDay = _dayCount > index;
-                      bool isFutureDay = _dayCount < index;
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 20),
+                    Text(
+                      'Próxima recompensa diaria en: ${_formatDuration(_timeRemaining)}',
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
+                    SizedBox(height: 20),
+                    Expanded(
+                      child: GridView.count(
+                        crossAxisCount: constraints.maxWidth > 600 ? 7 : 3,
+                        children: List.generate(7, (index) {
+                          bool isCurrentDay = _dayCount == index;
+                          bool isPastDay = _dayCount > index;
+                          bool isFutureDay = _dayCount < index;
 
-                      int reward = 0;
-                      if (index < 4) {
-                        reward = 10;
-                      } else if (index == 4) {
-                        reward = 20;
-                      } else if (index == 5) {
-                        reward = 40;
-                      } else if (index == 6) {
-                        reward = 100;
-                      }
+                          int reward = 0;
+                          if (index < 4) {
+                            reward = 10;
+                          } else if (index == 4) {
+                            reward = 20;
+                          } else if (index == 5) {
+                            reward = 40;
+                          } else if (index == 6) {
+                            reward = 100;
+                          }
 
-                      return GestureDetector(
-                        onTap: () {
-                          _claimDailyReward(index);
-                        },
-                        child: Card(
-                          elevation: 4,
-                          color: isCurrentDay ? Colors.blue : (isPastDay ? Colors.green : Colors.grey),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (_claimingReward && isCurrentDay)
-                                AnimatedBuilder(
-                                  animation: _animationController,
-                                  builder: (context, child) {
-                                    return Transform.scale(
-                                      scale: _animationController.value * 0.5 + 1, // Escala de 1 a 1.5
-                                      child: Opacity(
-                                        opacity: 1 - _animationController.value, // Opacidad de 1 a 0
-                                        child: Image.asset(
-                                          'assets/coin.png',
-                                          width: 100,
-                                          height: 100,
+                          return GestureDetector(
+                            onTap: () {
+                              _claimDailyReward(index);
+                            },
+                            child: Card(
+                              elevation: 4,
+                              color: isCurrentDay ? Colors.blue : (isPastDay ? Colors.green : Colors.grey),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  if (_claimingReward && isCurrentDay)
+                                    AnimatedBuilder(
+                                      animation: _animationController,
+                                      builder: (context, child) {
+                                        return Transform.scale(
+                                          scale: _animationController.value * 0.5 + 1,
+                                          child: Opacity(
+                                            opacity: 1 - _animationController.value,
+                                            child: Image.asset(
+                                              'assets/coin.png',
+                                              width: 100,
+                                              height: 100,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'Día ${index + 1}',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Día ${index + 1}',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                      ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Recompensa: $reward',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        if (isCurrentDay)
+                                          Icon(
+                                            Icons.lock_open,
+                                            color: Colors.white,
+                                          )
+                                        else if (isPastDay)
+                                          Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                          ),
+                                      ],
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'Recompensa: $reward',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    if (isCurrentDay)
-                                      Icon(
-                                        Icons.lock_open,
-                                        color: Colors.white,
-                                      )
-                                    else if (isPastDay)
-                                      Icon(
-                                        Icons.check,
-                                        color: Colors.white,
-                                      ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -282,19 +284,21 @@ class AnimatedBackground extends StatefulWidget {
 class _AnimatedBackgroundState extends State<AnimatedBackground> {
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: Duration(seconds: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.purple.shade700, Colors.deepPurple.shade900],
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+             colors: [Colors.purple.shade700, Colors.deepPurple.shade900],
           stops: [0.0, 0.5],
+          ),
         ),
       ),
     );
   }
 }
+
 
 class CombinedShop extends StatefulWidget {
   @override
@@ -353,6 +357,9 @@ class _CombinedShopState extends State<CombinedShop> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Tienda Diaria'),
@@ -362,7 +369,7 @@ class _CombinedShopState extends State<CombinedShop> with SingleTickerProviderSt
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              height: 20, // Ajusta la altura según tus necesidades
+              height: screenHeight * 0.03, // Altura relativa para el gradiente
               child: Stack(
                 children: [
                   AnimatedBuilder(
@@ -423,11 +430,11 @@ class _CombinedShopState extends State<CombinedShop> with SingleTickerProviderSt
               ),
             ),
             SizedBox(
-              height: 800, // Define una altura específica
-              child: BetCoinWidget(), // Reemplaza Placeholder con BetCoinWidget
+              height: screenHeight * 0.5, // Altura relativa para BetCoinWidget
+              child: BetCoinWidget(),
             ),
-            SizedBox(
-              height: 20, // Altura del separador, puedes ajustar según tu diseño
+            Container(
+              height: screenHeight * 0.03, // Altura relativa para el separador
               child: Stack(
                 children: [
                   AnimatedBuilder(
@@ -488,69 +495,8 @@ class _CombinedShopState extends State<CombinedShop> with SingleTickerProviderSt
               ),
             ),
             SizedBox(
-              height: 400, // Define una altura específica
-              child: TiendaWidget(), // Reemplaza Placeholder con TiendaWidget
-            ),
-          SizedBox(
-              height: 20, // Altura del separador, puedes ajustar según tu diseño
-              child: Stack(
-                children: [
-                  AnimatedBuilder(
-                    animation: _animation,
-                    builder: (context, child) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment(-1.0 + _animation.value, 0),
-                            end: Alignment(1.0 + _animation.value, 0),
-                            colors: [
-                              Color.fromARGB(255, 244, 92, 54),
-                              Color.fromARGB(255, 255, 204, 0),
-                              Colors.yellow,
-                              Colors.green,
-                              Colors.teal,
-                              Colors.blue,
-                              Colors.indigo,
-                              Colors.purple,
-                            ],
-                            stops: [
-                              0.0,
-                              0.1,
-                              0.2,
-                              0.3,
-                              0.4,
-                              0.5,
-                              0.6,
-                              0.7,
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  AnimatedBuilder(
-                    animation: _opacityAnimation,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity: _opacityAnimation.value,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment(-1.0, 0),
-                              end: Alignment(1.0, 0),
-                              colors: [
-                                Colors.transparent,
-                                Colors.transparent,
-                              ],
-                              stops: [0.0, 1.0],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+              height: screenHeight * 0.5, // Altura relativa para TiendaWidget
+              child: TiendaWidget(),
             ),
           ],
         ),
