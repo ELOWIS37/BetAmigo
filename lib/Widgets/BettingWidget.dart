@@ -540,13 +540,24 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
       if (usersSnapshot.docs.isNotEmpty) {
         String usuarioActualNombre = usersSnapshot.docs.first.get('user');
         String nombreApuesta = apuestas[index]; // Nombre de la apuesta seleccionada
-        
+        int cantidadApostada = int.parse(cantidad);
+        int betCoins = usersSnapshot.docs.first.data()['betCoins']; // Obtener el saldo actual de betCoins
+
+        if (betCoins < cantidadApostada) {
+          // Mostrar un mensaje de error si el usuario no tiene suficientes betCoins
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('El usuario no tiene suficientes betCoins para realizar esta apuesta.'),
+            backgroundColor: Colors.red,
+          ));
+          return; // Salir de la función si no tiene suficientes betCoins
+        }
+
         // Construir el objeto de apuesta
         Map<String, dynamic> apuesta = {
           'nombre': usuarioActualNombre,
           'goles-local': int.parse(golesLocal),
           'goles-visitante': int.parse(golesVisitante),
-          'cantidad-apostada': int.parse(cantidad),
+          'cantidad-apostada': cantidadApostada,
         };
 
         // Buscar y actualizar la apuesta del usuario en la colección 'apuestas'
@@ -558,7 +569,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                 if (usuarios[i]['nombre'] == usuarioActualNombre) {
                   usuarios[i]['goles-local'] = int.parse(golesLocal);
                   usuarios[i]['goles-visitante'] = int.parse(golesVisitante);
-                  usuarios[i]['cantidad-apostada'] = int.parse(cantidad);
+                  usuarios[i]['cantidad-apostada'] = cantidadApostada;
                   apuestaDoc.reference.update({'usuarios': usuarios}).then((_) {
                     print('Apuesta actualizada exitosamente para el usuario $usuarioActualNombre');
                   }).catchError((error) {
@@ -567,7 +578,6 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
 
                   // Agregar la cantidad apostada al campo 'bote' del documento
                   int actualBote = apuestaDoc['bote'] ?? 0;
-                  int cantidadApostada = int.parse(cantidad);
                   int nuevoBote = actualBote + cantidadApostada;
                   apuestaDoc.reference.update({'bote': nuevoBote}).then((_) {
                     print('Bote actualizado exitosamente para la apuesta $nombreApuesta');
@@ -576,23 +586,15 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
                   });
 
                   // Descontar los betCoins del usuario
-                  final int nuevoSaldo = usersSnapshot.docs.first.data()['betCoins'] - cantidadApostada;
-                  if (nuevoSaldo >= 0) {
-                    usersSnapshot.docs.first.reference.update({'betCoins': nuevoSaldo}).then((_) {
-                      print('betCoins actualizados exitosamente para el usuario $usuarioActualNombre');
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Error al actualizar los betCoins del usuario: $error'),
-                        backgroundColor: Colors.red,
-                      ));
-                    });
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('El usuario no tiene suficientes betCoins para realizar esta apuesta.'),
+                  final int nuevoSaldo = betCoins - cantidadApostada;
+                  usersSnapshot.docs.first.reference.update({'betCoins': nuevoSaldo}).then((_) {
+                    print('betCoins actualizados exitosamente para el usuario $usuarioActualNombre');
+                  }).catchError((error) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Error al actualizar los betCoins del usuario: $error'),
                       backgroundColor: Colors.red,
                     ));
-                  }
-
+                  });
 
                   return;
                 }
@@ -614,6 +616,7 @@ void _guardarApuesta(int index, String golesLocal, String golesVisitante, String
     print('No hay ningún usuario autenticado');
   }
 }
+
 
 
   void _crearNuevaApuesta() async {
