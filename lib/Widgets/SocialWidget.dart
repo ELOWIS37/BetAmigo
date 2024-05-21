@@ -2,6 +2,8 @@ import 'package:betamigo/Screens/chat.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+
 
 void main() {
   runApp(MaterialApp(
@@ -262,60 +264,117 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildGruposTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          TextField(
-            controller: _grupoController,
-            decoration: InputDecoration(
-              hintText: 'Nombre del grupo',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.8),
+Widget _buildGruposTab() {
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // Controles para crear un nuevo grupo
+        TextField(
+          controller: _grupoController,
+          decoration: InputDecoration(
+            hintText: 'Nombre del grupo',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
             ),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.8),
           ),
-          SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {
-              _mostrarSeleccionAmigos();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(51, 51, 51, 51),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              textStyle: TextStyle(color: Colors.white),
+        ),
+        SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () {
+            _mostrarSeleccionAmigos();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color.fromARGB(51, 51, 51, 51),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
             ),
-            child: Text('Agregar Amigos al Grupo'),
+            textStyle: TextStyle(color: Colors.white),
           ),
-          SizedBox(height: 20),
-          Expanded(
-            child: ListView.builder(
-              itemCount: grupos.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  elevation: 4.0,
-                  margin: EdgeInsets.symmetric(vertical: 8.0),
-                  child: ExpansionTile(
-                    title: Text(
-                      grupos[index]['nombre'],
-                      style: TextStyle(fontSize: 18.0),
-                    ),
-                    children: _buildGrupoChildren(grupos[index]['miembros']),
+          child: Text('Agregar Amigos al Grupo'),
+        ),
+        SizedBox(height: 20),
+        Expanded(
+          child: ListView.builder(
+            itemCount: grupos.length,
+            itemBuilder: (context, index) {
+              return Card(
+                elevation: 4.0,
+                margin: EdgeInsets.symmetric(vertical: 8.0),
+                child: ExpansionTile(
+                  title: Text(
+                    grupos[index]['nombre'],
+                    style: TextStyle(fontSize: 18.0),
                   ),
-                );
-              },
-            ),
+                  children: _buildGrupoChildren(grupos[index]['miembros']),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () {
+                      _eliminarGrupo(grupos[index]['nombre']);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+void _eliminarGrupo(String nombreGrupo) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return CupertinoAlertDialog(
+        title: Text('Eliminar Grupo'),
+        content: Text('¿Estás seguro de que quieres eliminar el grupo $nombreGrupo?'),
+        actions: <Widget>[
+          CupertinoDialogAction(
+            child: Text('Cancelar'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          CupertinoDialogAction(
+            child: Text('Eliminar'),
+            onPressed: () {
+              // Elimina el grupo
+              _eliminarGrupoConfirmado(nombreGrupo);
+              Navigator.of(context).pop(); // Cierra el diálogo
+            },
           ),
         ],
-      ),
-    );
-  }
+      );
+    },
+  );
+}
+void _eliminarGrupoConfirmado(String nombreGrupo) {
+  setState(() {
+    // Elimina el grupo de la lista de grupos
+    grupos.removeWhere((grupo) => grupo['nombre'] == nombreGrupo);
+  });
+
+  // Busca y elimina el documento del grupo en Firestore
+  FirebaseFirestore.instance.collection('grupos').where('nombre', isEqualTo: nombreGrupo).get().then((querySnapshot) {
+    querySnapshot.docs.forEach((doc) {
+      // Elimina el documento del grupo
+      doc.reference.delete().then((value) {
+        print('Grupo $nombreGrupo eliminado de la base de datos.');
+      }).catchError((error) {
+        print('Error al eliminar el grupo de la base de datos: $error');
+      });
+    });
+  }).catchError((error) {
+    print('Error al buscar el grupo en la base de datos: $error');
+  });
+}
+
+
 
   List<Widget> _buildGrupoChildren(List<String> miembros) {
     List<Widget> children = [];
@@ -622,4 +681,3 @@ void _mostrarDetalleAmigo(String amigo) {
   }
 
 }
-
