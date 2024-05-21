@@ -12,6 +12,17 @@ class BettingWidget extends StatefulWidget {
 }
 
 class _BettingWidgetState extends State<BettingWidget> {
+
+   // Define tus colores y gradientes aquí
+  final Color appBarColor = Colors.indigo;
+  final Color buttonColor = Colors.indigo;
+  final Color textColor = const Color.fromARGB(255, 0, 0, 0);
+  final Color cardColor = Colors.white;
+  final Gradient backgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Colors.lightBlueAccent, Colors.greenAccent],
+  );
   List<String> ligas = ['Bundesliga', 'Premier League', 'Ligue 1', 'Serie A', 'Champions League', 'Liga BBVA'];
   Map<String, String> leagueCodes = {
     'Bundesliga': 'BL1',
@@ -93,24 +104,30 @@ class _BettingWidgetState extends State<BettingWidget> {
   }
 
 
- @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Apuestas Virtuales'),
-        backgroundColor: Colors.indigo,
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(
+        'Apuestas Virtuales',
+        style: TextStyle(color: Colors.black), // Color del texto en negro
       ),
-      body: Padding(
+    ),
+    body: Container(
+      decoration: BoxDecoration(
+        gradient: backgroundGradient,
+      ),
+      child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               '¡Crea tu Apuesta!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.indigo),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 showDialog(
@@ -120,22 +137,21 @@ class _BettingWidgetState extends State<BettingWidget> {
                   },
                 );
               },
-              child: const Text('Crear Apuesta', style: TextStyle(fontSize: 18)),
+              child: Text('Crear Apuesta', style: TextStyle(fontSize: 18, color: Colors.black)), // Cambiar color del texto a negro
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
+                backgroundColor: Colors.white, // Cambiar el color a blanco
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            Text(
               'Apuestas Recientes',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black), // Cambiar color del texto a negro
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
                 itemCount: apuestas.length,
@@ -156,11 +172,14 @@ class _BettingWidgetState extends State<BettingWidget> {
                 },
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
+          ], // Children of the Column
+        ), // Column
+      ), // Padding
+    ), // Container
+  ); // Scaffold
+}
+
+
 
 
   Widget _mostrarSeleccionApuesta(BuildContext context) {
@@ -269,7 +288,7 @@ class _BettingWidgetState extends State<BettingWidget> {
             },
             child: const Text('Cancelar'),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.indigo,
+              foregroundColor: Colors.black,
             ),
           ),
           ElevatedButton(
@@ -277,9 +296,8 @@ class _BettingWidgetState extends State<BettingWidget> {
               _crearNuevaApuesta();
               Navigator.of(context).pop();
             },
-            child: const Text('Aceptar', style: TextStyle(fontSize: 16)),
+            child: const Text('Aceptar', style: TextStyle(fontSize: 16, color: Color.fromARGB(255, 0, 0, 0))),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -343,7 +361,6 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
             style: TextStyle(
               fontSize: 20.0,
               fontWeight: FontWeight.bold,
-              color: Colors.indigo,
             ),
           ),
           SizedBox(height: 20.0),
@@ -363,7 +380,7 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                   enabled: false,
                   decoration: InputDecoration(
                     labelText: 'Goles Locales',
-                    labelStyle: TextStyle(color: Colors.indigo),
+                    labelStyle: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -393,7 +410,7 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                   enabled: false,
                   decoration: InputDecoration(
                     labelText: 'Goles Visitantes',
-                    labelStyle: TextStyle(color: Colors.indigo),
+                    labelStyle: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -423,7 +440,7 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                   enabled: false,
                   decoration: InputDecoration(
                     labelText: 'Cantidad Apostada',
-                    labelStyle: TextStyle(color: Colors.indigo),
+                    labelStyle: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -447,7 +464,7 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                 child: Text(
                   'Cancelar',
                   style: TextStyle(
-                    color: Colors.indigo,
+                    color: Colors.black,
                     fontSize: 16.0,
                   ),
                 ),
@@ -517,9 +534,8 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                     print('No hay ningún usuario autenticado');
                   }
                 },
-                child: Text('Apostar', style: TextStyle(fontSize: 16)),
+                child: Text('Apostar', style: TextStyle(color: Colors.black,fontSize: 16)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -769,10 +785,10 @@ class _AnimatedApuestaState extends State<AnimatedApuesta> with SingleTickerProv
             children: [
               Text(
                 widget.nombreApuesta,
-                style: const TextStyle(fontSize: 16, color: Colors.indigo),
+                style: const TextStyle(fontSize: 16, color: Color.fromARGB(255,67, 199, 249)),
               ),
               IconButton(
-                icon: Icon(Icons.emoji_events, color: Colors.indigo),
+                icon: Icon(Icons.emoji_events, color: Color.fromARGB(255,67, 199, 249)),
                 onPressed: _mostrarResultado,
               ),
             ],
