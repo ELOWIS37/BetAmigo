@@ -8,7 +8,9 @@ import 'package:betamigo/Screens/Authentication/SignInScreen.dart';
 import 'package:betamigo/Widgets/BettingWidget.dart';
 import 'package:betamigo/Widgets/LeagueSelectionWidget.dart';
 import 'package:betamigo/Widgets/SocialWidget.dart';
-import 'package:betamigo/Widgets/BetCoinWidget.dart'; // Importa el widget BetCoinWidget
+import 'package:betamigo/Widgets/BetCoinWidget.dart'; 
+import 'package:flutter_animated_icons/flutter_animated_icons.dart'; // Importa el paquete
+
 
 void main() {
   runApp(MaterialApp(
@@ -133,165 +135,157 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    bool isSmallScreen = MediaQuery.of(context).size.width < 600;
+Widget build(BuildContext context) {
+  bool isSmallScreen = MediaQuery.of(context).size.width < 800;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
+  return Scaffold(
+    appBar: AppBar(
+      title: Row(
+        children: [
+          _buildMenuItem(0, Icons.sports_soccer, 'Ligas y Partidos', isSmallScreen),
+          SizedBox(width: 16),
+          _buildMenuItem(1, Icons.group, 'Social y Amigos', isSmallScreen),
+          SizedBox(width: 16),
+          _buildMenuItem(2, Icons.monetization_on, 'Apuestas Virtuales', isSmallScreen),
+        ],
+      ),
+      actions: [
+        Row(
           children: [
-            GestureDetector(
-              onTap: () => _onItemTapped(0),
-              child: Row(
-                children: [
-                  Icon(Icons.sports_soccer, color: _selectedIndex == 0 ? Colors.blue : Colors.black),
-                  if (!isSmallScreen) ...[
-                    SizedBox(width: 4),
-                    Text('Ligas y Partidos',
-                        style: TextStyle(color: _selectedIndex == 0 ? Colors.blue : Colors.black)),
-                  ]
-                ],
-              ),
+            StreamBuilder<int>(
+              stream: _betCoinsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                }
+                int betCoins = snapshot.data ?? 0;
+                return Row(
+                  children: [
+                    Image.asset('assets/coin.png', width: 20, height: 20), // Aquí carga la imagen de la moneda
+                    SizedBox(width: 4), // Espacio entre la imagen y el número
+                    Text('$betCoins'), // Muestra el número de BetCoins
+                  ],
+                );
+              },
             ),
-            SizedBox(width: 16),
-            GestureDetector(
-              onTap: () => _onItemTapped(1),
-              child: Row(
-                children: [
-                  Icon(Icons.group, color: _selectedIndex == 1 ? Colors.blue : Colors.black),
-                  if (!isSmallScreen) ...[
-                    SizedBox(width: 4),
-                    Text('Social y Amigos',
-                        style: TextStyle(color: _selectedIndex == 1 ? Colors.blue : Colors.black)),
-                  ]
-                ],
-              ),
-            ),
-            SizedBox(width: 16),
-            GestureDetector(
-              onTap: () => _onItemTapped(2),
-              child: Row(
-                children: [
-                  Icon(Icons.monetization_on, color: _selectedIndex == 2 ? Colors.blue : Colors.black),
-                  if (!isSmallScreen) ...[
-                    SizedBox(width: 4),
-                    Text('Apuestas Virtuales',
-                        style: TextStyle(color: _selectedIndex == 2 ? Colors.blue : Colors.black)),
-                  ]
-                ],
-              ),
+            PopupMenuButton(
+              itemBuilder: (BuildContext context) {
+                return [
+                  PopupMenuItem(
+                    child: ListTile(
+                      title: Text('Perfil'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showProfileDialog(context);
+                      },
+                    ),
+                  ),
+                  PopupMenuItem(
+                    child: ListTile(
+                      title: Text('Cerrar Sesión'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _signOut(context);
+                      },
+                    ),
+                  ),
+                ];
+              },
             ),
           ],
         ),
-        actions: [
-          Row(
-            children: [
-              StreamBuilder<int>(
-                stream: _betCoinsStream(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  }
-                  int betCoins = snapshot.data ?? 0;
-                  return Row(
-                    children: [
-                      Image.asset('assets/coin.png', width: 20, height: 20), // Aquí carga la imagen de la moneda
-                      SizedBox(width: 4), // Espacio entre la imagen y el número
-                      Text('$betCoins'), // Muestra el número de BetCoins
-                    ],
-                  );
-                },
+      ],
+    ),
+    body: Center(
+      child: _widgetOptions.elementAt(_selectedIndex),
+    ),
+    drawer: Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.lightBlueAccent,
+                  Colors.greenAccent,
+                ],
               ),
-              PopupMenuButton(
-                itemBuilder: (BuildContext context) {
-                  return [
-                    PopupMenuItem(
-                      child: ListTile(
-                        title: Text('Perfil'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showProfileDialog(context);
-                        },
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Perfil',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ValueListenableBuilder<String>(
+                  valueListenable: _profileImageIdNotifier,
+                  builder: (context, profileImageId, child) {
+                    return GestureDetector(
+                      onTap: () => _showProfileDialog(context),
+                      child: CircleAvatar(
+                        radius: 40,
+                        backgroundImage: profileImageId.isNotEmpty ? AssetImage(profileImageId) : null,
                       ),
-                    ),
-                    PopupMenuItem(
-                      child: ListTile(
-                        title: Text('Cerrar Sesión'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _signOut(context);
-                        },
-                      ),
-                    ),
-                  ];
-                },
-              ),
-            ],
+                    );
+                  },
+                )
+              ],
+            ),
+          ),
+          ListTile(
+            title: Text('Tienda Diaria'), // Agrega la opción del drawer para la recompensa diaria
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => CombinedShop()));
+            },
+          ),
+          ListTile(
+            title: Text('Cerrar Sesión'),
+            onTap: () {
+              _signOut(context);
+            },
           ),
         ],
       ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.lightBlueAccent,
-                    Colors.greenAccent,
-                  ],
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Perfil',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ValueListenableBuilder<String>(
-                    valueListenable: _profileImageIdNotifier,
-                    builder: (context, profileImageId, child) {
-                      return GestureDetector(
-                        onTap: () => _showProfileDialog(context),
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundImage: profileImageId.isNotEmpty ? AssetImage(profileImageId) : null,
-                        ),
-                      );
-                    },
-                  )
-                ],
-              ),
-            ),
-            ListTile(
-              title: Text('Tienda Diaria'), // Agrega la opción del drawer para la recompensa diaria
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => CombinedShop()));
-              },
-            ),
-            ListTile(
-              title: Text('Cerrar Sesión'),
-              onTap: () {
-                _signOut(context);
-              },
-            ),
-          ],
+    ),
+  );
+}
+
+Widget _buildMenuItem(int index, IconData icon, String text, bool isSmallScreen) {
+  bool isSelected = _selectedIndex == index;
+
+  return GestureDetector(
+    onTap: () => _onItemTapped(index),
+    child: Row(
+      children: [
+        Icon(
+          icon,
+          color: isSelected ? Colors.blue : Colors.black,
+          size: isSelected ? 28.0 : 24.0,
         ),
-      ),
-    );
-  }
+        if (!isSmallScreen) ...[
+          SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: isSelected ? Colors.blue : Colors.black,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ]
+      ],
+    ),
+  );
+}
+
 
 Future<void> _showProfileDialog(BuildContext context) async {
   User? user = FirebaseAuth.instance.currentUser;

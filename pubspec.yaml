@@ -22,6 +22,8 @@ dependencies:
   provider: ^6.1.2
   shelf: ^1.4.1
   shared_preferences: ^2.2.3
+  animated_theme_switcher: ^2.0.10
+  flutter_animated_icons: ^1.0.1
 
 dev_dependencies:
   flutter_test:
