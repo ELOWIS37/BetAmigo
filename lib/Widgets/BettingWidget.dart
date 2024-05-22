@@ -525,23 +525,23 @@ Widget _mostrarApostarDialog(BuildContext context, int index) {
                             if (usuarioActual != null) {
                               int cantidadApostada = usuarioActual['cantidad-apostada'];
                               if (cantidadApostada != 0) {
-                      showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: Text('Error'),
-                      content: Text('ya se ha realizado una apuesta'),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Text('OK'),
-                        ),
-                      ],
-                    );
-                  },
-                );
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('Error'),
+                                    content: Text('Ya se ha realizado una apuesta'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text('OK'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
                               } else {
                                 _guardarApuesta(index, _golesLocalController.text, _golesVisitanteController.text, _cantidadController.text);
                                 Navigator.of(context).pop();
